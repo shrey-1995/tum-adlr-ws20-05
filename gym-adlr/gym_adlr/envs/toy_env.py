@@ -36,6 +36,10 @@ class SparseToyEnvironment(gym.Env):
     self.radius2 = random.randint(5, 40)
     self.loc3 = self.get_random_position(clearance= 100)
     self.radius3 = random.randint(5, 40)
+    # Actions in 2D world from -1 to 1(x y) 
+    self.action_space = spaces.Box(-1, +1, (2,), dtype=np.float32)
+    # self.observation_space = self.loc1,loc2, loc3 so no need for more
+    
 
   def get_random_position(self, clearance=20) -> tuple:
     """
