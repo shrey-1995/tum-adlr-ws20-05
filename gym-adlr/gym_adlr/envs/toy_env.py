@@ -62,6 +62,11 @@ class SparseToyEnvironment(gym.Env):
     return circles
 
   def _circles_to_shapely(self, circles: dict):
+    """
+    Transforms our circles into shapely shapes to compute faster intersections
+    :param circles: dictionary of circles
+    :return: dictionary of shapely circles
+    """
     shapely = {}
     for c in circles:
       shapely[c] = Point(*circles[c][0]).buffer(circles[c][1])
@@ -149,7 +154,7 @@ class SparseToyEnvironment(gym.Env):
       self.viewer = rendering.Viewer(self.xmax, self.ymax)
 
       # Draw the circles on the screen
-      self._render_space()
+      self._render.circles()
 
     # Render agent
     l, r, t, b = -self.agent_width / 2, self.agent_width / 2, self.agent_height, 0
@@ -160,7 +165,10 @@ class SparseToyEnvironment(gym.Env):
     # Actual rendering
     return self.viewer.render(return_rgb_array=mode == 'rgb_array')
 
-  def _render_space(self, mode='human'):
+  def _render_circles(self, mode='human'):
+    """
+    Renders all the circles that were created
+    """
     for c in self.circles:
       dot = rendering.make_circle(self.circles[c][1], res=40, filled=True)
       dot.set_color(random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))
@@ -171,6 +179,10 @@ class SparseToyEnvironment(gym.Env):
     return self.viewer.render(return_rgb_array= mode == 'rgb_array')
 
   def close(self):
+    """
+    Close the view
+    :return:
+    """
     if self.viewer:
       self.viewer.close()
 
