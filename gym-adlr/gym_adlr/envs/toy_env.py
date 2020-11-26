@@ -6,6 +6,7 @@ from gym import spaces
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
+import torch
 
 class SparseToyEnvironment(gym.Env):
   metadata = {'render.modes': ['human']}
@@ -22,19 +23,21 @@ class SparseToyEnvironment(gym.Env):
     self.ymax=1000
     self.viewer = None
 
-    # Initialize speed for each axis and limitations for them.
-    self.speed = (0, 0)
-    self.speed_range = (0, 1)
+    # Size of the agent
+    self.agent_width = 30
+    self.agent_height = 30
 
     # Set time for each step
     self.fps = 50
     self.t = 1./self.fps
 
     # Set initial position for the agent
-    self.init_pos = self._get_random_position(clearance= 10)
-    self.state = [self.init_pos, self.speed]
-    self.agent_width = 30
-    self.agent_height = 30
+    self.position = self._get_random_position(clearance= 10)
+
+    # Initialize speed for each axis and limitations for them.
+    self.speed = (0, 0)
+    self.speed_range = (0, 1)
+    self.acceleration = (0,0)
 
     # Define circles as tuples ((x, y), radius)
     self.circles = self._generate_circles(n_circles=3, clearance=100)
@@ -48,7 +51,19 @@ class SparseToyEnvironment(gym.Env):
     # Actions in 2D world from -1 to 1(x y) 
     self.action_space = spaces.Box(-1, +1, (2,), dtype=np.float32)
 
-    # self.observation_space = self.loc1,loc2, loc3 so no need for more
+    """
+    Observation space is defined as:
+    [position_x: float,
+     position_y: float,
+     speed_x: float,
+     speed_y: float,
+     acceleration_x: float,
+     acceleration_y: float,
+     prev_position_x: float,
+     prev_position_y: float]
+    """
+    self.observation_space = [self.position[0], self.position[1], self.speed[0], self.speed[1],
+                              self.acceleration[0], self.acceleration[1], self.position[0], self.position[1]]
 
   def _generate_circles(self, n_circles = 3, clearance=100):
     """
@@ -99,36 +114,40 @@ class SparseToyEnvironment(gym.Env):
         return c
     return None
 
-  def step(self, action: tuple):
+  def step(self, action):
     """
     Given a position in a 2D space and the speed component for each dimension, the agent will accelerate in both dimensions in each step
     :param action: tuple with two elements (accelaration_x, acceleration_y)
     :return: state after action, reward collected, if the task is finished
     """
 
-    prev_position_x = self.state[0][0]
-    prev_position_y = self.state[0][1]
+    prev_position_x = self.observation_space[6]
+    prev_position_y = self.observation_space[7]
 
-    speed_x = self.state[1][0]
-    speed_y = self.state[1][1]
+    speed_x = self.observation_space[2]
+    speed_y = self.observation_space[3]
 
     # Action clipped to the range -1, 1
-    # TODO: check which values should be min and max for acceleration
-    action = np.clip(action, -1, +1).astype(np.float32)
+    action = action.numpy()
+    print("The action is: {}".format(action))
 
     # Compute new position
     position_x = prev_position_x + speed_x * self.t + 0.5*(action[0]*self.t*self.t)
     position_y = prev_position_y + speed_y * self.t + 0.5 * (action[1] * self.t * self.t)
 
     # Ensure the position is within our window
-    self.state[0][0] = max(0, min(position_x, self.xmax))
-    self.state[0][1] = max(0, min(position_y, self.ymax))
+    self.observation_space[0] = max(0, min(position_x, self.xmax))
+    self.observation_space[1] = max(0, min(position_y, self.ymax))
 
     # Compute new speed for both axis
-    self.state[1][0] = speed_x+action[0]*self.t
-    self.state[1][1] = speed_y+action[1]*self.t
+    self.observation_space[2] = speed_x+action[0]*self.t
+    self.observation_space[3] = speed_y+action[1]*self.t
 
-    trajectory = LineString([(prev_position_x, prev_position_y), self.state[0]])
+    # Update acceleration
+    self.observation_space[4] = action[0]
+    self.observation_space[5] = action[1]
+
+    trajectory = LineString([(prev_position_x, prev_position_y), self.agent_state[0]])
     intersection = self._check_collision(self.circles_shapely, trajectory)
     if intersection:
       self.visited.append(intersection)
@@ -140,10 +159,38 @@ class SparseToyEnvironment(gym.Env):
       if self.visited==self.sequence:
         self.reward += 10
 
-    return self.state, self.reward, self.done, {}
+    return self.observation_space, self.reward, self.done, {}
+
+  def _destroy(self):
+    # Information about our reward
+    self.reward = 0
+    self.visited = []
+    self.done = False  # True if we have visited all circles
+
+    # Reset the view
+    self.viewer = None
+
+    # Initialize speed for each axis and limitations for them.
+    self.speed = (0, 0)
+    self.speed_range = (0, 1)
+
+    # Set initial position for the agent
+    self.init_pos = self._get_random_position(clearance=10)
+    self.agent_state = [self.init_pos, self.speed]
 
   def reset(self):
-    return None
+    self._destroy()
+
+    # Define circles as tuples ((x, y), radius)
+    self.circles = self._generate_circles(n_circles=3, clearance=100)
+
+    # Express the circles with shapely library for quite intersection check
+    self.circles_shapely = self._circles_to_shapely(self.circles)
+
+    # Define sequence in which circles should be visited
+    self.sequence = [k for k in self.circles.keys()]
+
+    return self.step(torch.tensor([0, 0]))[0]
 
   def render(self, mode='human'):
     """
@@ -159,7 +206,7 @@ class SparseToyEnvironment(gym.Env):
     # Render agent
     l, r, t, b = -self.agent_width / 2, self.agent_width / 2, self.agent_height, 0
     agent = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
-    agent.add_attr(rendering.Transform(translation=(self.state[0])))
+    agent.add_attr(rendering.Transform(translation=(self.agent_state[0])))
     self.viewer.add_geom(agent)
 
     # Actual rendering
