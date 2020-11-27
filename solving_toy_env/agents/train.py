@@ -24,7 +24,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     env = gym.make('CarRacing-v0')
-    agent = CarRacingDQNAgent(epsilon=args.epsilon)
+    agent = DQNAgent(epsilon=args.epsilon)
     if args.model:
         agent.load(args.model)
     if args.start:

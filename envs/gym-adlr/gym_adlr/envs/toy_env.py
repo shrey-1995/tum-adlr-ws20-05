@@ -12,7 +12,7 @@ import Box2D
 import pyglet
 from pyglet import gl
 
-class SparseToyEnvironment(gym.Env):
+class ToyEnv(gym.Env):
   metadata = {'render.modes': ['human']}
   def __init__(self):
     self._seed()
@@ -150,7 +150,7 @@ class SparseToyEnvironment(gym.Env):
       # If there is a new intersection, include it and reward agent
       if intersection and intersection not in self.visited:
         self.visited.append(intersection)
-        self.reward += 1
+        self.reward += 1.1 # .1 to compensate reward for not reaching objectives
 
       # Check if we finished visiting all circles
       if len(self.visited) == len(self.circles.keys()):
