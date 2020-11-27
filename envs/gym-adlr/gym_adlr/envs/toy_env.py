@@ -12,6 +12,13 @@ import Box2D
 import pyglet
 from pyglet import gl
 
+STATE_W = 96  # less than Atari 160x192
+STATE_H = 96
+VIDEO_W = 600
+VIDEO_H = 400
+WINDOW_W = 1000
+WINDOW_H = 800
+
 class ToyEnv(gym.Env):
   metadata = {'render.modes': ['human']}
   def __init__(self):
@@ -29,7 +36,7 @@ class ToyEnv(gym.Env):
 
     # Set time for each step
     self.fps = 50
-    self.t = 1./self.fps
+    self.t = 0
 
     # Set initial position for the agent
     self.init_position = self._get_random_position(clearance= 10)
@@ -66,7 +73,8 @@ class ToyEnv(gym.Env):
     """
     circles = {}
     for i in range(n_circles):
-      circles[i] = (self._get_random_position(clearance=clearance), random.randint(15, 40))
+      # {key: [position, radius, color]}
+      circles[i] = [self._get_random_position(clearance=clearance), random.randint(15, 40), (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))]
     return circles
 
   def _circles_to_shapely(self, circles: dict):
@@ -201,10 +209,10 @@ class ToyEnv(gym.Env):
     """
     # If the view was not declared, show the window with given size
     if self.viewer is None:
-      self.viewer = rendering.Viewer(self.xmax, self.ymax)
+      self.viewer = rendering.Viewer(WINDOW_W, WINDOW_H)
 
-      # Draw the circles on the screen
-      self._render_circles()
+    # Draw the circles on the screen
+    self._render_circles()
 
     # Render agent
     self.car.draw(self.viewer, mode != "state_pixels")
@@ -217,19 +225,19 @@ class ToyEnv(gym.Env):
     win.clear()
 
     if mode == "rgb_array":
-      VP_W = self.xmax
-      VP_H = self.ymax
+      VP_W = VIDEO_W
+      VP_H = VIDEO_H
     elif mode == "state_pixels":
-      VP_W = self.xmax
-      VP_H = self.ymax
+      VP_W = STATE_W
+      VP_H = STATE_H
     else:
       pixel_scale = 1
       if hasattr(win.context, "_nscontext"):
         pixel_scale = (
           win.context._nscontext.view().backingScaleFactor()
         )  # pylint: disable=protected-access
-      VP_W = int(pixel_scale * self.xmax)
-      VP_H = int(pixel_scale * self.ymax)
+      VP_W = int(pixel_scale * WINDOW_W)
+      VP_H = int(pixel_scale * WINDOW_H)
 
     gl.glViewport(0, 0, VP_W, VP_H)
 
@@ -252,7 +260,7 @@ class ToyEnv(gym.Env):
     """
     for c in self.circles:
       dot = rendering.make_circle(self.circles[c][1], res=40, filled=True)
-      dot.set_color(random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))
+      dot.set_color(*self.circles[c][2])
       dot.add_attr(rendering.Transform(translation=self.circles[c][0]))
       self.viewer.add_geom(dot)
 
