@@ -7,6 +7,10 @@ import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
 import torch
+from gym_adlr.components.car import Car
+import Box2D
+import pyglet
+from pyglet import gl
 
 class SparseToyEnvironment(gym.Env):
   metadata = {'render.modes': ['human']}
@@ -19,25 +23,21 @@ class SparseToyEnvironment(gym.Env):
     self.done = False # True if we have visited all circles
 
     # Size of the screen
-    self.xmax=1000
-    self.ymax=1000
+    self.xmax=700
+    self.ymax=700
     self.viewer = None
-
-    # Size of the agent
-    self.agent_width = 30
-    self.agent_height = 30
 
     # Set time for each step
     self.fps = 50
     self.t = 1./self.fps
 
     # Set initial position for the agent
-    self.position = self._get_random_position(clearance= 10)
+    self.init_position = self._get_random_position(clearance= 10)
+    self.init_angle = random.randint(0, 360)
 
-    # Initialize speed for each axis and limitations for them.
-    self.speed = (0, 0)
-    self.speed_range = (0, 1)
-    self.acceleration = (0,0)
+    # Init car and world
+    self.world = Box2D.b2World((0, 0))
+    self.car = Car(self.world, self.init_angle, *self.init_position)
 
     # Define circles as tuples ((x, y), radius)
     self.circles = self._generate_circles(n_circles=3, clearance=100)
@@ -48,22 +48,15 @@ class SparseToyEnvironment(gym.Env):
     # Define sequence in which circles should be visited
     self.sequence = [k for k in self.circles.keys()]
 
-    # Actions in 2D world from -1 to 1(x y) 
-    self.action_space = spaces.Box(-1, +1, (2,), dtype=np.float32)
+    # Action space is defined for steering, accelarating and breaking
+    self.action_space = spaces.Box(
+      np.array([-1, 0, 0]), np.array([+1, +1, +1]), dtype=np.float32
+    )
 
-    """
-    Observation space is defined as:
-    [position_x: float,
-     position_y: float,
-     speed_x: float,
-     speed_y: float,
-     acceleration_x: float,
-     acceleration_y: float,
-     prev_position_x: float,
-     prev_position_y: float]
-    """
-    self.observation_space = [self.position[0], self.position[1], self.speed[0], self.speed[1],
-                              self.acceleration[0], self.acceleration[1], self.position[0], self.position[1]]
+    # Observation space
+    self.observation_space = spaces.Box(
+      low=0, high=255, shape=(self.ymax, self.xmax, 3), dtype=np.uint8
+    )
 
   def _generate_circles(self, n_circles = 3, clearance=100):
     """
@@ -73,7 +66,7 @@ class SparseToyEnvironment(gym.Env):
     """
     circles = {}
     for i in range(n_circles):
-      circles[i] = (self._get_random_position(clearance=clearance), random.randint(20, 60))
+      circles[i] = (self._get_random_position(clearance=clearance), random.randint(15, 40))
     return circles
 
   def _circles_to_shapely(self, circles: dict):
@@ -120,66 +113,73 @@ class SparseToyEnvironment(gym.Env):
     :param action: tuple with two elements (accelaration_x, acceleration_y)
     :return: state after action, reward collected, if the task is finished
     """
+    # Store previous position to compute trajectory
+    x_prev, y_prev = self.car.hull.position
 
-    prev_position_x = self.observation_space[6]
-    prev_position_y = self.observation_space[7]
+    # Update information in our car class
+    if action is not None:
+      self.car.steer(-action[0])
+      self.car.gas(action[1])
+      self.car.brake(action[2])
 
-    speed_x = self.observation_space[2]
-    speed_y = self.observation_space[3]
+    self.car.step(1.0 / self.fps)
+    self.world.Step(1.0 / self.fps, 6 * 30, 2 * 30)
+    self.t += 1.0 / self.fps
 
-    # Action clipped to the range -1, 1
-    action = action.numpy()
-    print("The action is: {}".format(action))
+    # Render new position
+    self.state = self.render("state_pixels")
 
-    # Compute new position
-    position_x = prev_position_x + speed_x * self.t + 0.5*(action[0]*self.t*self.t)
-    position_y = prev_position_y + speed_y * self.t + 0.5 * (action[1] * self.t * self.t)
+    # Get new position
+    x, y = self.car.hull.position
 
-    # Ensure the position is within our window
-    self.observation_space[0] = max(0, min(position_x, self.xmax))
-    self.observation_space[1] = max(0, min(position_y, self.ymax))
+    # Init variables
+    step_reward = 0
+    done = False
 
-    # Compute new speed for both axis
-    self.observation_space[2] = speed_x+action[0]*self.t
-    self.observation_space[3] = speed_y+action[1]*self.t
+    if action is not None:  # First step without action, called from reset()
+      # We discount reward for not reaching objectives
+      self.reward -= 0.1
 
-    # Update acceleration
-    self.observation_space[4] = action[0]
-    self.observation_space[5] = action[1]
+      # We don't care about fuel so just set it to 0
+      self.car.fuel_spent = 0.0
 
-    trajectory = LineString([(prev_position_x, prev_position_y), self.agent_state[0]])
-    intersection = self._check_collision(self.circles_shapely, trajectory)
-    if intersection:
-      self.visited.append(intersection)
-      self.reward += 1
+      # Compute trajectory in this step and check intersection with circles
+      trajectory = LineString([(x_prev, y_prev), (x, y)])
+      intersection = self._check_collision(self.circles_shapely, trajectory)
 
-    self.done = True if len(self.visited)==len(self.circles.keys()) else False
+      # If there is a new intersection, include it and reward agent
+      if intersection and intersection not in self.visited:
+        self.visited.append(intersection)
+        self.reward += 1
 
-    if self.done:
-      if self.visited==self.sequence:
-        self.reward += 10
+      # Check if we finished visiting all circles
+      if len(self.visited) == len(self.circles.keys()):
+        self.done = True
+        self.reward += 100
 
-    return self.observation_space, self.reward, self.done, {}
+      # Compute how much reward we achieved in this step
+      step_reward = self.reward - self.prev_reward
+
+      # Update previous reward with current
+      self.prev_reward = self.reward
+
+    return self.state, step_reward, done, {}
 
   def _destroy(self):
-    # Information about our reward
-    self.reward = 0
-    self.visited = []
-    self.done = False  # True if we have visited all circles
-
     # Reset the view
     self.viewer = None
 
-    # Initialize speed for each axis and limitations for them.
-    self.speed = (0, 0)
-    self.speed_range = (0, 1)
-
-    # Set initial position for the agent
-    self.init_pos = self._get_random_position(clearance=10)
-    self.agent_state = [self.init_pos, self.speed]
+    # Reset car
+    self.car.destroy()
 
   def reset(self):
     self._destroy()
+
+    # Information about our reward
+    self.reward = 0
+    self.prev_reward = 0
+    self.visited = []
+    self.done = False  # True if we have visited all circles
 
     # Define circles as tuples ((x, y), radius)
     self.circles = self._generate_circles(n_circles=3, clearance=100)
@@ -190,7 +190,10 @@ class SparseToyEnvironment(gym.Env):
     # Define sequence in which circles should be visited
     self.sequence = [k for k in self.circles.keys()]
 
-    return self.step(torch.tensor([0, 0]))[0]
+    # Create car
+    self.car = Car(self.world, self.init_angle, *self.init_position)
+
+    return self.step(None)[0]
 
   def render(self, mode='human'):
     """
@@ -201,15 +204,11 @@ class SparseToyEnvironment(gym.Env):
       self.viewer = rendering.Viewer(self.xmax, self.ymax)
 
       # Draw the circles on the screen
-      self._render.circles()
+      self._render_circles()
 
     # Render agent
-    l, r, t, b = -self.agent_width / 2, self.agent_width / 2, self.agent_height, 0
-    agent = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
-    agent.add_attr(rendering.Transform(translation=(self.agent_state[0])))
-    self.viewer.add_geom(agent)
+    self.car.draw(self.viewer, mode != "state_pixels")
 
-    # Actual rendering
     return self.viewer.render(return_rgb_array=mode == 'rgb_array')
 
   def _render_circles(self, mode='human'):
@@ -235,6 +234,7 @@ class SparseToyEnvironment(gym.Env):
 
 if __name__ == '__main__':
   env = SparseToyEnvironment()
+  env.reset()
 
   while True:
     env.render()
