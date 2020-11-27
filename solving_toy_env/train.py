@@ -1,29 +1,31 @@
 import argparse
 import gym
 from collections import deque
-from ..agents.agent import DQNAgent
-from ..agents.utils import process_state_image
-from ..agents.utils import generate_state_frame_stack_from_queue
+from solving_toy_env.agent import DQNAgent
+from solving_toy_env.utils import process_state_image
+from solving_toy_env.utils import generate_state_frame_stack_from_queue
 
 RENDER = True
 STARTING_EPISODE = 1
 ENDING_EPISODE = 1000
 SKIP_FRAMES = 2
 TRAINING_BATCH_SIZE = 64
-SAVE_TRAINING_FREQUENCY = 25
+SAVE_TRAINING_FREQUENCY = 5
 UPDATE_TARGET_MODEL_FREQUENCY = 5
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Training a DQN agent to play CarRacing.')
     parser.add_argument('-m', '--model',
-                        help='Specify the last trained model path if you want to continue training after it.')
-    parser.add_argument('-s', '--start', type=int, help='The starting episode, default to 1.')
-    parser.add_argument('-e', '--end', type=int, help='The ending episode, default to 1000.')
+                        help='Specify the last trained model path if you want to continue training after it.', default=None)
+    parser.add_argument('-s', '--start', type=int, help='The starting episode, default to 1.', default=1)
+    parser.add_argument('-e', '--end', type=int, help='The ending episode, default to 1000.', default=20)
     parser.add_argument('-p', '--epsilon', type=float, default=1.0,
                         help='The starting epsilon of the agent, default to 1.0.')
+    parser.add_argument('-o', '--output', type=str, help='The output path to store the model states',
+                        default='/Users/javi/Desktop/TUM/Robotics/tum-adlr-ws20-05/output/')
     args = parser.parse_args()
 
-    env = gym.make('CarRacing-v0')
+    env = gym.make('gym_adlr.envs:toy-v0')
     agent = DQNAgent(epsilon=args.epsilon)
     if args.model:
         agent.load(args.model)
@@ -89,6 +91,6 @@ if __name__ == '__main__':
             agent.update_target_model()
 
         if e % SAVE_TRAINING_FREQUENCY == 0:
-            agent.save('./save/trial_{}.h5'.format(e))
+            agent.save('{}/trial_{}.h5'.format(args.output, e))
 
     env.close()
