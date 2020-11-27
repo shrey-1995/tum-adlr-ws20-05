@@ -18,11 +18,10 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--model',
                         help='Specify the last trained model path if you want to continue training after it.', default=None)
     parser.add_argument('-s', '--start', type=int, help='The starting episode, default to 1.', default=1)
-    parser.add_argument('-e', '--end', type=int, help='The ending episode, default to 1000.', default=20)
+    parser.add_argument('-e', '--end', type=int, help='The ending episode, default to 1000.', default=1)
     parser.add_argument('-p', '--epsilon', type=float, default=1.0,
                         help='The starting epsilon of the agent, default to 1.0.')
-    parser.add_argument('-o', '--output', type=str, help='The output path to store the model states',
-                        default='/Users/javi/Desktop/TUM/Robotics/tum-adlr-ws20-05/output/')
+    parser.add_argument('-o', '--output', type=str, help='The output path to store the model states', required=True)
     args = parser.parse_args()
 
     env = gym.make('gym_adlr.envs:toy-v0')
@@ -73,7 +72,8 @@ if __name__ == '__main__':
 
             agent.memorize(current_state_frame_stack, action, reward, next_state_frame_stack, done)
 
-            if done or negative_reward_counter >= 25 or total_reward < 0:
+            if done or negative_reward_counter >= 25 or total_reward < -100:
+                print('done here after visiting: {}'.format(info))
                 print(
                     'Episode: {}/{}, Scores(Time Frames): {}, Total Rewards(adjusted): {:.2}, Epsilon: {:.2}'.format(e,
                                                                                                                      ENDING_EPISODE,

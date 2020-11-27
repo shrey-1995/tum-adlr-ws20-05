@@ -163,7 +163,7 @@ class ToyEnv(gym.Env):
       # Update previous reward with current
       self.prev_reward = self.reward
 
-    return self.state, step_reward, done, {}
+    return self.state, step_reward, done, self.visited
 
   def _destroy(self):
     # Reset the view
@@ -209,7 +209,42 @@ class ToyEnv(gym.Env):
     # Render agent
     self.car.draw(self.viewer, mode != "state_pixels")
 
-    return self.viewer.render(return_rgb_array=mode == 'rgb_array')
+    # Render to images
+    win = self.viewer.window
+    win.switch_to()
+    win.dispatch_events()
+
+    win.clear()
+
+    if mode == "rgb_array":
+      VP_W = self.xmax
+      VP_H = self.ymax
+    elif mode == "state_pixels":
+      VP_W = self.xmax
+      VP_H = self.ymax
+    else:
+      pixel_scale = 1
+      if hasattr(win.context, "_nscontext"):
+        pixel_scale = (
+          win.context._nscontext.view().backingScaleFactor()
+        )  # pylint: disable=protected-access
+      VP_W = int(pixel_scale * self.xmax)
+      VP_H = int(pixel_scale * self.ymax)
+
+    gl.glViewport(0, 0, VP_W, VP_H)
+
+    if mode == "human":
+      win.flip()
+      return self.viewer.isopen
+
+    image_data = (
+      pyglet.image.get_buffer_manager().get_color_buffer().get_image_data()
+    )
+    arr = np.fromstring(image_data.get_data(), dtype=np.uint8, sep="")
+    arr = arr.reshape(VP_H, VP_W, 4)
+    arr = arr[::-1, :, 0:3]
+
+    return arr
 
   def _render_circles(self, mode='human'):
     """
