@@ -141,7 +141,7 @@ class Car:
 
             # Position => friction_limit
             grass = True
-            friction_limit = FRICTION_LIMIT*0.6  # Grass friction if no tile
+            friction_limit = FRICTION_LIMIT*0.9  # Grass friction if no tile
             for tile in w.tiles:
                 friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction)
                 grass = False
@@ -183,18 +183,10 @@ class Car:
             p_force *= 205000*SIZE*SIZE
             force = np.sqrt(np.square(f_force) + np.square(p_force))
 
+
             # Skid trace
-            if abs(force) > 2.0*friction_limit:
-                if w.skid_particle and w.skid_particle.grass == grass and len(w.skid_particle.poly) < 30:
-                    w.skid_particle.poly.append( (w.position[0], w.position[1]) )
-                elif w.skid_start is None:
-                    w.skid_start = w.position
-                else:
-                    w.skid_particle = self._create_particle( w.skid_start, w.position, grass )
-                    w.skid_start = None
-            else:
-                w.skid_start = None
-                w.skid_particle = None
+            w.skid_start = None
+            w.skid_particle = None
 
             if abs(force) > friction_limit:
                 f_force /= force

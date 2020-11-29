@@ -25,7 +25,7 @@ class ToyEnv(gym.Env):
     self._seed()
 
     # Information about our reward
-    self.reward = 0
+    self.reward = 500
     self.visited=[]
     self.done = False # True if we have visited all circles
 
@@ -46,11 +46,8 @@ class ToyEnv(gym.Env):
     self.world = Box2D.b2World((0, 0))
     self.car = Car(self.world, self.init_angle, *self.init_position)
 
-    # Define circles as tuples ((x, y), radius, (R,G,B))
-    self.circles = self._generate_circles(n_circles=3, clearance=100)
-
-    # Express the circles with shapely library for quite intersection check
-    self.circles_shapely = self._circles_to_shapely(self.circles)
+    # Generate circles as tuples ((x, y), radius, (R,G,B))
+    self.circles, self.circles_shapely = self._generate_circles(n_circles=3, clearance=100)
 
     # Define sequence in which circles should be visited
     self.sequence = [k for k in self.circles.keys()]
@@ -65,28 +62,35 @@ class ToyEnv(gym.Env):
       low=0, high=255, shape=(self.ymax, self.xmax, 3), dtype=np.uint8
     )
 
+  def _is_circle_valid(self, circle):
+    if len(self.circles.keys())==0: # First circle is always valid
+      return True
+    else: # Check intersection with previous circles
+      shapely_circle = Point(*circle[0]).buffer(circle[1]) # represent circle as shapely shape
+      for k in self.circles_shapely:
+        if not shapely_circle.disjoint(self.circles_shapely[k]): # If there is overlap return false
+          return False
+      return True
+
   def _generate_circles(self, n_circles = 3, clearance=100):
     """
     Function to generate n circles for our environment
     :param clearance: clearance from the screen edges
     :return: dictionary with all the circles
     """
-    circles = {}
-    for i in range(n_circles):
-      # {key: [position, radius, color]}
-      circles[i] = [self._get_random_position(clearance=clearance), random.randint(15, 40), (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))]
-    return circles
+    self.circles = {}
+    self.circles_shapely = {}
+    done = 0
 
-  def _circles_to_shapely(self, circles: dict):
-    """
-    Transforms our circles into shapely shapes to compute faster intersections
-    :param circles: dictionary of circles
-    :return: dictionary of shapely circles
-    """
-    shapely = {}
-    for c in circles:
-      shapely[c] = Point(*circles[c][0]).buffer(circles[c][1])
-    return shapely
+    while done<n_circles:
+      circle = [self._get_random_position(clearance=clearance), random.randint(15, 40), (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))]
+      if self._is_circle_valid(circle):
+        self.circles[done] = circle
+        self.circles_shapely[done] = Point(*circle[0]).buffer(circle[1])
+        done+=1
+
+    return self.circles, self.circles_shapely
+
 
   def _get_random_position(self, clearance=20) -> tuple:
     """
@@ -156,7 +160,7 @@ class ToyEnv(gym.Env):
       intersection = self._check_collision(self.circles_shapely, trajectory)
 
       # If there is a new intersection, include it and reward agent
-      if intersection and intersection not in self.visited:
+      if intersection is not None and intersection not in self.visited:
         self.visited.append(intersection)
         self.reward += 1.1 # .1 to compensate reward for not reaching objectives
 
@@ -171,7 +175,7 @@ class ToyEnv(gym.Env):
       # Update previous reward with current
       self.prev_reward = self.reward
 
-    return self.state, step_reward, done, self.visited
+    return self.state, step_reward, self.done, self.visited
 
   def _destroy(self):
     # Reset the view
@@ -190,10 +194,7 @@ class ToyEnv(gym.Env):
     self.done = False  # True if we have visited all circles
 
     # Define circles as tuples ((x, y), radius)
-    self.circles = self._generate_circles(n_circles=3, clearance=100)
-
-    # Express the circles with shapely library for quite intersection check
-    self.circles_shapely = self._circles_to_shapely(self.circles)
+    self.circles, self.circles_shapely = self._generate_circles(n_circles=3, clearance=100)
 
     # Define sequence in which circles should be visited
     self.sequence = [k for k in self.circles.keys()]
