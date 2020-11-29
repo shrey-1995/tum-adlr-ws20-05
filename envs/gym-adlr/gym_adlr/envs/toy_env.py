@@ -12,12 +12,12 @@ import Box2D
 import pyglet
 from pyglet import gl
 
-STATE_W = 96  # less than Atari 160x192
+STATE_W = 96
 STATE_H = 96
 VIDEO_W = 600
 VIDEO_H = 400
-WINDOW_W = 1000
-WINDOW_H = 800
+WINDOW_W = 500
+WINDOW_H = 500
 
 class ToyEnv(gym.Env):
   metadata = {'render.modes': ['human']}
@@ -30,13 +30,13 @@ class ToyEnv(gym.Env):
     self.done = False # True if we have visited all circles
 
     # Size of the screen
-    self.xmax=700
-    self.ymax=700
+    self.xmax=WINDOW_W
+    self.ymax=WINDOW_H
     self.viewer = None
 
     # Set time for each step
     self.fps = 50
-    self.t = 0
+    self.t = 0.
 
     # Set initial position for the agent
     self.init_position = self._get_random_position(clearance= 10)
@@ -46,7 +46,7 @@ class ToyEnv(gym.Env):
     self.world = Box2D.b2World((0, 0))
     self.car = Car(self.world, self.init_angle, *self.init_position)
 
-    # Define circles as tuples ((x, y), radius)
+    # Define circles as tuples ((x, y), radius, (R,G,B))
     self.circles = self._generate_circles(n_circles=3, clearance=100)
 
     # Express the circles with shapely library for quite intersection check
@@ -126,7 +126,7 @@ class ToyEnv(gym.Env):
 
     # Update information in our car class
     if action is not None:
-      self.car.steer(-action[0])
+      self.car.steer(action[0])
       self.car.gas(action[1])
       self.car.brake(action[2])
 
@@ -211,18 +211,8 @@ class ToyEnv(gym.Env):
     if self.viewer is None:
       self.viewer = rendering.Viewer(WINDOW_W, WINDOW_H)
 
-    # Draw the circles on the screen
-    self._render_circles()
-
     # Render agent
     self.car.draw(self.viewer, mode != "state_pixels")
-
-    # Render to images
-    win = self.viewer.window
-    win.switch_to()
-    win.dispatch_events()
-
-    win.clear()
 
     if mode == "rgb_array":
       VP_W = VIDEO_W
@@ -231,18 +221,15 @@ class ToyEnv(gym.Env):
       VP_W = STATE_W
       VP_H = STATE_H
     else:
-      pixel_scale = 1
-      if hasattr(win.context, "_nscontext"):
-        pixel_scale = (
-          win.context._nscontext.view().backingScaleFactor()
-        )  # pylint: disable=protected-access
+      pixel_scale = 2
       VP_W = int(pixel_scale * WINDOW_W)
       VP_H = int(pixel_scale * WINDOW_H)
 
     gl.glViewport(0, 0, VP_W, VP_H)
 
     if mode == "human":
-      win.flip()
+      # Draw the circles on the screen
+      self._render_circles()
       return self.viewer.isopen
 
     image_data = (
@@ -265,7 +252,7 @@ class ToyEnv(gym.Env):
       self.viewer.add_geom(dot)
 
     # Actual rendering
-    return self.viewer.render(return_rgb_array= mode == 'rgb_array')
+    return self.viewer.render(return_rgb_array = mode == 'rgb_array')
 
   def close(self):
     """
@@ -276,7 +263,7 @@ class ToyEnv(gym.Env):
       self.viewer.close()
 
 if __name__ == '__main__':
-  env = SparseToyEnvironment()
+  env = ToyEnv()
   env.reset()
 
   while True:
