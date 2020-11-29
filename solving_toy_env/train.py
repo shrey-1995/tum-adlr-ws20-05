@@ -37,7 +37,7 @@ if __name__ == '__main__':
         init_state = env.reset()
         init_state = process_state_image(init_state)
 
-        total_reward = 0
+        total_reward = env.reward
         negative_reward_counter = 0
         state_frame_stack_queue = deque([init_state] * agent.frame_stack_num, maxlen=agent.frame_stack_num)
         time_frame_counter = 1
@@ -58,7 +58,7 @@ if __name__ == '__main__':
                     break
 
             # If continually getting negative reward 10 times after the tolerance steps, terminate this episode
-            negative_reward_counter = negative_reward_counter + 1 if time_frame_counter > 100 and reward < 0 else 0
+            negative_reward_counter = negative_reward_counter + 1 if time_frame_counter > 100 and reward <= 0 else 0
 
             # Extra bonus for the model if it uses full gas
             if action[1] == 1 and action[2] == 0:
@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
             agent.memorize(current_state_frame_stack, action, reward, next_state_frame_stack, done)
 
-            if done or negative_reward_counter >= 25 or total_reward < -100:
+            if done or negative_reward_counter >= 25 or total_reward < 0:
                 print('done here after visiting: {}'.format(info))
                 print(
                     'Episode: {}/{}, Scores(Time Frames): {}, Total Rewards(adjusted): {:.2}, Epsilon: {:.2}'.format(e,

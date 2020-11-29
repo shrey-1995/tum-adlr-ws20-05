@@ -19,13 +19,18 @@ VIDEO_H = 400
 WINDOW_W = 500
 WINDOW_H = 500
 
+INIT_REWARD = 200
+STEP_REWARD = 0.1 # this value will be substracted during each step
+VISITING_CIRCLE_REWARD = 30
+FINISHING_REWARD = 500
+
 class ToyEnv(gym.Env):
   metadata = {'render.modes': ['human']}
   def __init__(self):
     self._seed()
 
     # Information about our reward
-    self.reward = 500
+    self.reward = INIT_REWARD
     self.visited=[]
     self.done = False # True if we have visited all circles
 
@@ -39,7 +44,7 @@ class ToyEnv(gym.Env):
     self.t = 0.
 
     # Set initial position for the agent
-    self.init_position = self._get_random_position(clearance= 10)
+    self.init_position = self._get_random_position(clearance= 100)
     self.init_angle = random.randint(0, 360)
 
     # Init car and world
@@ -148,9 +153,16 @@ class ToyEnv(gym.Env):
     step_reward = 0
     done = False
 
+    # If it is out of boundaries, generate random position again in the field
+    if abs(x) > self.xmax or abs(y) > self.ymax or x<0 or y<0:
+      print('out of boundaries')
+      step_reward -= 100 # Negative reward for getting out of the window
+      x, y = self._get_random_position(clearance=50)
+      self.car.hull.position = (x,y)
+
     if action is not None:  # First step without action, called from reset()
       # We discount reward for not reaching objectives
-      self.reward -= 0.1
+      self.reward -= STEP_REWARD
 
       # We don't care about fuel so just set it to 0
       self.car.fuel_spent = 0.0
@@ -162,12 +174,12 @@ class ToyEnv(gym.Env):
       # If there is a new intersection, include it and reward agent
       if intersection is not None and intersection not in self.visited:
         self.visited.append(intersection)
-        self.reward += 1.1 # .1 to compensate reward for not reaching objectives
+        self.reward += VISITING_CIRCLE_REWARD
 
       # Check if we finished visiting all circles
       if len(self.visited) == len(self.circles.keys()):
         self.done = True
-        self.reward += 100
+        self.reward += FINISHING_REWARD
 
       # Compute how much reward we achieved in this step
       step_reward = self.reward - self.prev_reward
@@ -188,7 +200,7 @@ class ToyEnv(gym.Env):
     self._destroy()
 
     # Information about our reward
-    self.reward = 0
+    self.reward = INIT_REWARD
     self.prev_reward = 0
     self.visited = []
     self.done = False  # True if we have visited all circles

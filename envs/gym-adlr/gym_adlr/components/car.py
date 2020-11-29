@@ -183,7 +183,6 @@ class Car:
             p_force *= 205000*SIZE*SIZE
             force = np.sqrt(np.square(f_force) + np.square(p_force))
 
-
             # Skid trace
             w.skid_start = None
             w.skid_particle = None
