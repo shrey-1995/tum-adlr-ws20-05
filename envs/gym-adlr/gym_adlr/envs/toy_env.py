@@ -19,10 +19,21 @@ VIDEO_H = 400
 WINDOW_W = 500
 WINDOW_H = 500
 
-INIT_REWARD = 200
-STEP_REWARD = 0.1 # this value will be substracted during each step
-VISITING_CIRCLE_REWARD = 30
-FINISHING_REWARD = 500
+SPARSE = True
+
+if SPARSE:
+  #### SPARSE SETTING
+  INIT_REWARD = 0
+  STEP_REWARD = 0
+  VISITING_CIRCLE_REWARD = 0
+  FINISHING_REWARD = 500
+else:
+  #### NON SPARSE SETTING
+  INIT_REWARD = 300
+  STEP_REWARD = 0.1  # this value will be substracted during each step
+  VISITING_CIRCLE_REWARD = 30
+  FINISHING_REWARD = 500
+
 
 class ToyEnv(gym.Env):
   metadata = {'render.modes': ['human']}
@@ -155,7 +166,6 @@ class ToyEnv(gym.Env):
 
     # If it is out of boundaries, generate random position again in the field
     if abs(x) > self.xmax or abs(y) > self.ymax or x<0 or y<0:
-      print('out of boundaries')
       step_reward -= 100 # Negative reward for getting out of the window
       x, y = self._get_random_position(clearance=50)
       self.car.hull.position = (x,y)
