@@ -19,6 +19,15 @@ VIDEO_H = 400
 WINDOW_W = 500
 WINDOW_H = 500
 
+N_CIRCLES = 3
+
+ACTION_SPACE = [
+            (-1, 1, 0.2), (0, 1, 0.2), (1, 1, 0.2), #          Discretized Action Space
+            (-1, 1,   0), (0, 1,   0), (1, 1,   0), #        (Steering Wheel, Gas, Break)
+            (-1, 0, 0.2), (0, 0, 0.2), (1, 0, 0.2), #       -1(left)~1(right)  0~1   0~1
+            (-1, 0,   0), (0, 0,   0), (1, 0,   0)
+        ]
+
 SPARSE = True
 
 if SPARSE:
@@ -43,7 +52,7 @@ class ToyEnv(gym.Env):
 
         # Information about our reward
         self.reward = INIT_REWARD
-        self.visited = []
+        self.visited = np.zeros(N_CIRCLES)
         self.done = False  # True if we have visited all circles
 
         # Size of the screen
@@ -64,15 +73,19 @@ class ToyEnv(gym.Env):
         self.car = Car(self.world, self.init_angle, *self.init_position)
 
         # Generate circles as tuples ((x, y), radius, (R,G,B))
-        self.circles, self.circles_shapely = self._generate_circles(n_circles=3, clearance=100)
+        self.circles, self.circles_shapely = self._generate_circles(n_circles=N_CIRCLES, clearance=100)
 
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
 
         # Action space is defined for steering, accelarating and breaking
+        self.action_space = spaces.Discrete(12)
+
+        """ CONTINUOUS CASE
         self.action_space = spaces.Box(
             np.array([-1, 0, 0]), np.array([+1, +1, +1]), dtype=np.float32
         )
+        """
 
         # Observation space
         # TODO: how to define
@@ -85,9 +98,10 @@ class ToyEnv(gym.Env):
         #                   s[5] is the angle of wheel 1
         #                   s[6] is the speed of wheel 2
         #                   s[7] is the speed of wheel 3
+        #                   s[8:8+N_CIRCLES] boolean determining if circles were visited
 
         self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(8,), dtype=np.uint8
+            low=-np.inf, high=np.inf, shape=(8+N_CIRCLES,), dtype=np.uint8
         )
 
     def _is_circle_valid(self, circle):
@@ -147,21 +161,26 @@ class ToyEnv(gym.Env):
                 return c
         return None
 
-    def step(self, action):
+    def step(self, action, render=True, continuous=False):
         """
-    Given a position in a 2D space and the speed component for each dimension, the agent will accelerate in both dimensions in each step
-    :param action: tuple with two elements (accelaration_x, acceleration_y)
-    :return: state after action, reward collected, if the task is finished
-    """
-        if torch.is_tensor(action):
-            action = action.detach().cpu().numpy()
-            print("Action transformed {}".format(action))
+    Performs a step in our world
 
+    """
         # Store previous position to compute trajectory
         x_prev, y_prev = self.car.hull.position
 
         # Update information in our car class
-        if action is not None:
+        if action is not None and not continuous:
+            if torch.is_tensor(action):
+                action = action.detach().cpu().numpy()[0]
+            assert self.action_space.contains(action), "%r (%s) invalid " % (action, type(action))
+            action = ACTION_SPACE[action]
+
+            self.car.steer(action[0])
+            self.car.gas(action[1])
+            self.car.brake(action[2])
+
+        if action is not None and continuous:
             self.car.steer(action[0])
             self.car.gas(action[1])
             self.car.brake(action[2])
@@ -195,12 +214,12 @@ class ToyEnv(gym.Env):
             intersection = self._check_collision(self.circles_shapely, trajectory)
 
             # If there is a new intersection, include it and reward agent
-            if intersection is not None and intersection not in self.visited:
-                self.visited.append(intersection)
+            if intersection is not None and self.visited[intersection] == 0:
+                self.visited[intersection] = 1
                 self.reward += VISITING_CIRCLE_REWARD
 
             # Check if we finished visiting all circles
-            if len(self.visited) == len(self.circles.keys()):
+            if np.sum(self.visited) == len(self.circles.keys()):
                 self.done = True
                 self.reward += FINISHING_REWARD
 
@@ -210,8 +229,10 @@ class ToyEnv(gym.Env):
             # Update previous reward with current
             self.prev_reward = self.reward
 
-        self.observation_space = [x, y, self.car.wheels[0].omega, self.car.wheels[0].phase, self.car.wheels[1].omega, self.car.wheels[1].phase, self.car.wheels[2].omega, self.car.wheels[3].omega]
-        print("Observation space: {}".format(self.observation_space))
+        self.observation_space = [x, y, self.car.wheels[0].omega, self.car.wheels[0].phase, self.car.wheels[1].omega, self.car.wheels[1].phase, self.car.wheels[2].omega, self.car.wheels[3].omega, *self.visited]
+
+        if render:
+            self.render()
 
         return self.observation_space, step_reward, self.done, self.visited
 
@@ -219,18 +240,19 @@ class ToyEnv(gym.Env):
         # Reset the view
         self.viewer = None
 
+        self.circles = {}
+        self.circles_shapely = {}
+
         # Reset car
         self.car.destroy()
 
     def reset(self):
         self._destroy()
 
-        self.render()
-
         # Information about our reward
         self.reward = INIT_REWARD
         self.prev_reward = 0
-        self.visited = []
+        self.visited = np.zeros(N_CIRCLES)
         self.done = False  # True if we have visited all circles
 
         # Define circles as tuples ((x, y), radius)
@@ -241,6 +263,8 @@ class ToyEnv(gym.Env):
 
         # Create car
         self.car = Car(self.world, self.init_angle, *self.init_position)
+
+        self.render()
 
         return self.step(None)[0]
 

@@ -139,7 +139,7 @@ if __name__ == '__main__':
                   num_learning_iterations=args.num_learning_iterations,
                   episode_batch_size=args.episode_batch_size,
                   lr=0.0002, writer=writer, loss=args.loss)
-            run(actor, env, min_rate=0.05, writer=writer)
+            run(actor, env, min_rate=0.05, writer=writer, render=True)
             # Remove early trajectories when buffer gets too large
             B = B[-args.buffer_size:]
 

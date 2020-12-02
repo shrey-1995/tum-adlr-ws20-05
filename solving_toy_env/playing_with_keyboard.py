@@ -94,11 +94,12 @@ if __name__ == '__main__':
 
     counter = 0
     total_reward = 0
+
     while not is_pressed_esc:
         env.render()
         update_action()
         action = [steering_wheel, gas, break_system]
-        state, reward, done, info = env.step(action)
+        state, reward, done, info = env.step(action, continuous=True)
         counter += 1
         total_reward += reward
         print('Action:[{:+.1f}, {:+.1f}, {:+.1f}] Reward: {:.3f} Visited: {}'.format(action[0], action[1], action[2], total_reward, info))

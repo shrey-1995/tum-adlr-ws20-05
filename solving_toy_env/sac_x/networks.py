@@ -159,7 +159,7 @@ class Actor(SQXNet):
         x = super().forward(x, intention)
         # Intention head determines parameters of Categorical distribution
         dist = torch.distributions.Categorical(x)
-        print("Dist here {}".format(dist))
+        action = dist.sample()
         if log_prob:
             log_prob = dist.log_prob(action)
             return action, log_prob
