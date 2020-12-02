@@ -22,10 +22,10 @@ WINDOW_H = 500
 N_CIRCLES = 3
 
 ACTION_SPACE = [
-            (-1, 1, 0.2), (0, 1, 0.2), (1, 1, 0.2), #          Discretized Action Space
-            (-1, 1,   0), (0, 1,   0), (1, 1,   0), #        (Steering Wheel, Gas, Break)
-            (-1, 0, 0.2), (0, 0, 0.2), (1, 0, 0.2), #       -1(left)~1(right)  0~1   0~1
-            (-1, 0,   0), (0, 0,   0), (1, 0,   0)
+            (-1, 0, 0), (-.5, 0, 0), (-0.1, 0, 0),      #          Discretized Action Space
+            (1, 0,   0), (0.5, 0,   0), (0.1, 0,   0),  #        (Steering Wheel, Gas, Break)
+            (0, 1, 0.2), (0, 0.5, 0), (0, 0.1, 0),      #       -1(left)~1(right)  0~1   0~1
+            (0, 0,   1), (0, 0,   0.5), (0, 0,   0.2)
         ]
 
 SPARSE = True
