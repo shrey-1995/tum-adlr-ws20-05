@@ -136,18 +136,17 @@ class Car:
         self.wheels[1].steer = s
 
     def step(self, dt):
+        is_accelerating = False
+
         for w in self.wheels:
+            if w.gas>0: is_accelerating = True
             # Steer each wheel
             dir = np.sign(w.steer - w.joint.angle)
             val = abs(w.steer - w.joint.angle)
             w.joint.motorSpeed = dir*min(50.0*val, 3.0)
 
             # Position => friction_limit
-            grass = True
             friction_limit = FRICTION_LIMIT*0.9  # Grass friction if no tile
-            for tile in w.tiles:
-                friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction)
-                grass = False
 
             # Force
             forw = w.GetWorldVector( (0,1) )
@@ -168,6 +167,7 @@ class Car:
                 val = BRAKE_FORCE*w.brake
                 if abs(val) > abs(w.omega): val = abs(w.omega)  # low speed => same as = 0
                 w.omega += dir*val
+
             w.phase += w.omega*dt
 
             vr = w.omega*w.wheel_rad  # rotating wheel speed
@@ -198,6 +198,15 @@ class Car:
             w.ApplyForceToCenter( (
                 p_force*side[0] + f_force*forw[0],
                 p_force*side[1] + f_force*forw[1]), True )
+
+        if not is_accelerating:
+            for w in self.wheels:
+                BRAKE_FORCE = 15  # radians per second
+                dir = np.sign(-1)
+                val = BRAKE_FORCE * 0.2
+                if abs(val) > abs(w.omega): val = abs(w.omega)  # low speed => same as = 0
+                w.omega = max(0, w.omega + dir * val) # Avoid going back when stopped
+
 
     def draw(self, viewer, draw_particles=True):
         if draw_particles:
