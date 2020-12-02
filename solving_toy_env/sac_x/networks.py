@@ -18,10 +18,10 @@ class IntentionBase(torch.nn.Module):
 
     def init_weights(self):
         # Initialize the other layers with xavier (still constant 0 bias)
-        torch.nn.init.xavier_uniform(self.layer1.weight.data)
-        torch.nn.init.constant(self.layer1.bias.data, 0)
-        torch.nn.init.xavier_uniform(self.final_layer.weight.data)
-        torch.nn.init.constant(self.final_layer.bias.data, 0)
+        torch.nn.init.xavier_uniform_(self.layer1.weight.data)
+        torch.nn.init.constant_(self.layer1.bias.data, 0)
+        torch.nn.init.xavier_uniform_(self.final_layer.weight.data)
+        torch.nn.init.constant_(self.final_layer.bias.data, 0)
 
     def forward(self, x):
         x = self.non_linear(self.layer1(x))
@@ -100,14 +100,14 @@ class SQXNet(torch.nn.Module):
 
     def init_weights(self):
         # Initialize the other layers with xavier (still constant 0 bias)
-        torch.nn.init.xavier_uniform(self.layer1.weight.data)
-        torch.nn.init.constant(self.layer1.bias.data, 0)
-        torch.nn.init.xavier_uniform(self.layer2.weight.data)
-        torch.nn.init.constant(self.layer2.bias.data, 0)
+        torch.nn.init.xavier_uniform_(self.layer1.weight.data)
+        torch.nn.init.constant_(self.layer1.bias.data, 0)
+        torch.nn.init.xavier_uniform_(self.layer2.weight.data)
+        torch.nn.init.constant_(self.layer2.bias.data, 0)
 
     def forward(self, x, intention):
         # Feed the input through the base layers of the model
-        x = torch.autograd.Variable(torch.Tensor(x))
+        x = torch.autograd.Variable(torch.Tensor(x.copy()))
         x = self.non_linear(self.layer1(x))
         if self.batch_norm:
             x = self.bn1(x)
@@ -139,7 +139,7 @@ class Actor(SQXNet):
                  num_intentions=6,
                  head_input_size=16,
                  head_hidden_size=8,
-                 head_output_size=4,
+                 head_output_size=12,
                  non_linear=torch.nn.ELU(),
                  net_type='actor',
                  batch_norm=False,
@@ -159,7 +159,7 @@ class Actor(SQXNet):
         x = super().forward(x, intention)
         # Intention head determines parameters of Categorical distribution
         dist = torch.distributions.Categorical(x)
-        action = dist.sample()
+        print("Dist here {}".format(dist))
         if log_prob:
             log_prob = dist.log_prob(action)
             return action, log_prob
@@ -211,7 +211,7 @@ if __name__ == '__main__':
     import gym
     import random
 
-    env = gym.make('LunarLander-v2')
+    env = gym.make('gym_adlr.envs:toy-v0')
     obs = env.reset()
     task_idx = random.randint(0, 6)
 

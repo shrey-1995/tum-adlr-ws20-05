@@ -98,7 +98,7 @@ if __name__ == '__main__':
     B = []
 
     # Environment is the lunar lander from OpenAI gym
-    env = gym.make('LunarLander-v2')
+    env = gym.make('gym_adlr.envs:toy-v0')
 
     # task scheduler is defined in tasks.py
     task = TaskScheduler()

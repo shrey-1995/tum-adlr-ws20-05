@@ -63,10 +63,13 @@ class Car:
         self.hull.color = (0.8, 0.0, 0.0)
         self.wheels = []
         self.fuel_spent = 0.0
+
+        ## CREATE WHEELS
         WHEEL_POLY = [
             (-WHEEL_W, +WHEEL_R), (+WHEEL_W, +WHEEL_R),
             (+WHEEL_W, -WHEEL_R), (-WHEEL_W, -WHEEL_R)
             ]
+
         for wx, wy in WHEELPOS:
             front_k = 1.0 if wy > 0 else 1.0
             w = self.world.CreateDynamicBody(
@@ -150,12 +153,8 @@ class Car:
             forw = w.GetWorldVector( (0,1) )
             side = w.GetWorldVector( (1,0) )
             v = w.linearVelocity
-            vf = forw[0]*v[0] + forw[1]*v[1]  # forward speed
+            vf = forw[0]*v[0] + forw[1]*v[1]  # forward speed computed by
             vs = side[0]*v[0] + side[1]*v[1]  # side speed
-
-            # WHEEL_MOMENT_OF_INERTIA*np.square(w.omega)/2 = E -- energy
-            # WHEEL_MOMENT_OF_INERTIA*w.omega * domega/dt = dE/dt = W -- power
-            # domega = dt*W/WHEEL_MOMENT_OF_INERTIA/w.omega
 
             # add small coef not to divide by zero
             w.omega += dt*ENGINE_POWER*w.gas/WHEEL_MOMENT_OF_INERTIA/(abs(w.omega)+5.0)

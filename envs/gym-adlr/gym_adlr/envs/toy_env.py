@@ -75,8 +75,19 @@ class ToyEnv(gym.Env):
         )
 
         # Observation space
+        # TODO: how to define
+        # s (list): The state. Attributes:
+        #                   s[0] is the horizontal position
+        #                   s[1] is the vertical position
+        #                   s[2] is the speed of wheel 0
+        #                   s[3] is the angle of wheel 0
+        #                   s[4] is the speed of wheel 1
+        #                   s[5] is the angle of wheel 1
+        #                   s[6] is the speed of wheel 2
+        #                   s[7] is the speed of wheel 3
+
         self.observation_space = spaces.Box(
-            low=0, high=255, shape=(self.ymax, self.xmax, 3), dtype=np.uint8
+            low=-np.inf, high=np.inf, shape=(8,), dtype=np.uint8
         )
 
     def _is_circle_valid(self, circle):
@@ -142,6 +153,10 @@ class ToyEnv(gym.Env):
     :param action: tuple with two elements (accelaration_x, acceleration_y)
     :return: state after action, reward collected, if the task is finished
     """
+        if torch.is_tensor(action):
+            action = action.detach().cpu().numpy()
+            print("Action transformed {}".format(action))
+
         # Store previous position to compute trajectory
         x_prev, y_prev = self.car.hull.position
 
@@ -154,9 +169,6 @@ class ToyEnv(gym.Env):
         self.car.step(1.0 / self.fps)
         self.world.Step(1.0 / self.fps, 6 * 30, 2 * 30)
         self.t += 1.0 / self.fps
-
-        # Render new position
-        self.state = self.render("state_pixels")
 
         # Get new position
         x, y = self.car.hull.position
@@ -198,7 +210,10 @@ class ToyEnv(gym.Env):
             # Update previous reward with current
             self.prev_reward = self.reward
 
-        return self.state, step_reward, self.done, self.visited
+        self.observation_space = [x, y, self.car.wheels[0].omega, self.car.wheels[0].phase, self.car.wheels[1].omega, self.car.wheels[1].phase, self.car.wheels[2].omega, self.car.wheels[3].omega]
+        print("Observation space: {}".format(self.observation_space))
+
+        return self.observation_space, step_reward, self.done, self.visited
 
     def _destroy(self):
         # Reset the view
@@ -209,6 +224,8 @@ class ToyEnv(gym.Env):
 
     def reset(self):
         self._destroy()
+
+        self.render()
 
         # Information about our reward
         self.reward = INIT_REWARD
@@ -234,36 +251,12 @@ class ToyEnv(gym.Env):
         # If the view was not declared, show the window with given size
         if self.viewer is None:
             self.viewer = rendering.Viewer(WINDOW_W, WINDOW_H)
+            self._render_circles()
 
         # Render agent
         self.car.draw(self.viewer, mode != "state_pixels")
 
-        if mode == "rgb_array":
-            VP_W = VIDEO_W
-            VP_H = VIDEO_H
-        elif mode == "state_pixels":
-            VP_W = STATE_W
-            VP_H = STATE_H
-        else:
-            pixel_scale = 2
-            VP_W = int(pixel_scale * WINDOW_W)
-            VP_H = int(pixel_scale * WINDOW_H)
-
-        gl.glViewport(0, 0, VP_W, VP_H)
-
-        if mode == "human":
-            # Draw the circles on the screen
-            self._render_circles()
-            return self.viewer.isopen
-
-        image_data = (
-            pyglet.image.get_buffer_manager().get_color_buffer().get_image_data()
-        )
-        arr = np.fromstring(image_data.get_data(), dtype=np.uint8, sep="")
-        arr = arr.reshape(VP_H, VP_W, 4)
-        arr = arr[::-1, :, 0:3]
-
-        return arr
+        return self.viewer.render(return_rgb_array=mode == 'rgb_array')
 
     def _render_circles(self, mode='human'):
         """
