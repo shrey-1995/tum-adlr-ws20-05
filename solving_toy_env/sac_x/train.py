@@ -132,6 +132,7 @@ if __name__ == '__main__':
 
         for i in range(args.num_train_cycles):
             print('Training cycle %s of %s' % (i, args.num_train_cycles))
+            print("Task {}".format(task))
             act(actor, env, task, B,
                 num_trajectories=args.num_trajectories,
                 task_period=30, writer=writer)

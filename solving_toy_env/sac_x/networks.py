@@ -134,7 +134,7 @@ class Actor(SQXNet):
     """Class for policy (or actor) network"""
 
     def __init__(self,
-                 state_dim=8,
+                 state_dim=11, # Must be equal to the shape of the observation space
                  base_hidden_size=32,
                  num_intentions=6,
                  head_input_size=16,

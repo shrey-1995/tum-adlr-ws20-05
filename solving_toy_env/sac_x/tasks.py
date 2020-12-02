@@ -13,6 +13,8 @@ import numpy as np
 # Extrinsic Rewards:
 # Success: Did we visit all circles
 
+REWARD_MOD = 10
+
 def touch_circles(state):
     """
     Auxiliary reward for touching lander legs on the ground
@@ -20,7 +22,7 @@ def touch_circles(state):
     :return: (float) reward
     """
     circles_visited = state[8:]  # 1.0 if a circle was visited
-    return np.sum(circles_visited)
+    return np.sum(circles_visited)*REWARD_MOD
 
 class TaskScheduler(object):
     """Class defines Scheduler for storing and picking tasks"""
