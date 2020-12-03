@@ -100,6 +100,8 @@ class ToyEnv(gym.Env):
         #                   s[7] is the speed of wheel 3
         #                   s[8:8+N_CIRCLES] boolean determining if circles were visited
 
+        #TODO include circles locations
+
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(8+N_CIRCLES,), dtype=np.uint8
         )
@@ -168,6 +170,10 @@ class ToyEnv(gym.Env):
     """
         # Store previous position to compute trajectory
         x_prev, y_prev = self.car.hull.position
+
+        # End if agent achieved nothing and return negative reward
+        if self.t > 120:
+            return self.observation_space, -200, True, self.visited
 
         # Update information in our car class
         if action is not None and not continuous:
@@ -242,6 +248,8 @@ class ToyEnv(gym.Env):
 
         self.circles = {}
         self.circles_shapely = {}
+
+        self.t = 0.
 
         # Reset car
         self.car.destroy()

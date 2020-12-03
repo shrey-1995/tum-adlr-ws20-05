@@ -107,7 +107,7 @@ class SQXNet(torch.nn.Module):
 
     def forward(self, x, intention):
         # Feed the input through the base layers of the model
-        x = torch.autograd.Variable(torch.Tensor(x.copy()))
+        x = torch.autograd.Variable(torch.Tensor(x))
         x = self.non_linear(self.layer1(x))
         if self.batch_norm:
             x = self.bn1(x)
