@@ -1,4 +1,4 @@
-from ddpg_mountaincar.ddpg import DDPGAgent
+from ddpg.ddpg import DDPGAgent
 import numpy as np
 import gym
 import os
@@ -25,6 +25,7 @@ def trainer(env, agent, max_episodes, max_steps, batch_size, action_noise, rende
         for step in range(max_steps):
             action = agent.get_action(state, action_noise)
             next_state, reward, done, _ = env.step(action)
+
             if render:
                 env.render(mode='human')
 

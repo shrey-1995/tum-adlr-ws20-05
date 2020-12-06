@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from datetime import datetime
-from ddpg_mountaincar.models import Critic_gen, Actor_gen
+from ddpg.models import Critic_gen, Actor_gen
 from collections import deque
 from sys import exit
 import random
