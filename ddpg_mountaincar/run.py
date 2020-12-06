@@ -27,6 +27,7 @@ def trainer(env, agent, max_episodes, max_steps, batch_size, action_noise, rende
             next_state, reward, done, _ = env.step(action)
             if render:
                 env.render(mode='human')
+
             d_store = False if step == max_steps - 1 else done
             agent.replay_buffer.push(state, action, reward, next_state, d_store)
             episode_reward += reward
@@ -59,3 +60,7 @@ if __name__ == "__main__":
 
     agent = DDPGAgent(env, gamma, tau, buffer_maxlen, critic_lr, actor_lr)
     episode_rewards = trainer(env, agent, max_episodes, max_steps, batch_size, action_noise=0.1, render=False)
+
+    with open('./output/episode_rewards_lunar.txt', 'w') as f:
+        for item in episode_rewards:
+            f.write("%s\n" % item)

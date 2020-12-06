@@ -84,6 +84,24 @@ class DDPGAgent:
         a += noise_scale * np.random.randn(self.action_dim)
         return np.clip(a, -self.action_max, self.action_max)
 
+    def test_agent(self, num_episodes=5, max_episode_length=500):
+        test_returns = []
+
+        for j in range(num_episodes):
+            s, episode_return, episode_length, d = self.env.reset(), 0, 0, False
+
+            while not (d or (episode_length == max_episode_length)):
+                # Take deterministic actions at test time (noise_scale=0)
+                self.env.render()
+                s, r, d, _ = self.env.step(self.get_action(s, 0))
+                episode_return += r
+                episode_length += 1
+
+            print('Testing episode {}/{} ===> Episode return = {} | Episode length = {}:'.format(j, num_episodes, episode_return, episode_length))
+            test_returns.append(episode_return)
+
+        return test_returns
+
     def update(self, batch_size):
         X, A, R, X2, D = self.replay_buffer.sample(batch_size)
         X = np.asarray(X, dtype=np.float32)
@@ -126,3 +144,8 @@ class DDPGAgent:
         temp2 = np.array(self.mu.get_weights())
         temp3 = self.tau * temp2 + (1 - self.tau) * temp1
         self.mu_target.set_weights(temp3)
+
+        self.mu_target.save('./models/mu_target.h5')
+        self.q_mu_target.save('./models/q_mu_target.h5')
+        self.mu.save('./models/mu.h5')
+        self.q_mu.save('./models/q_mu.h5')
