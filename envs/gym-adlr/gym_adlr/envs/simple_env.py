@@ -18,7 +18,9 @@ N_CIRCLES = 3
 FIXED_POSITIONS = [(350, 80), (300, 400), (200, 200)]
 INIT_POS = (20, 480)
 
-SPARSE = True
+SPARSE = False
+
+EPISODE_LENGTH = 150
 
 if SPARSE:
     #### SPARSE SETTING
@@ -184,7 +186,7 @@ class SimpleEnv(gym.Env):
 
         # End if agent achieved nothing and return negative reward
         # TODO: fix actions limit
-        if self.t > self.dt*300: # After 100 actions
+        if self.t > self.dt*EPISODE_LENGTH: # After 100 actions
             return self.observation_space, self.reward-200, True, self.visited
 
         if action is not None:
