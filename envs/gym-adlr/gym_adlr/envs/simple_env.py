@@ -15,6 +15,9 @@ WINDOW_H = WINDOW_W
 
 N_CIRCLES = 3
 
+FIXED_POSITIONS = [(350, 80), (300, 400), (200, 200)]
+INIT_POS = (20, 480)
+
 SPARSE = True
 
 if SPARSE:
@@ -53,13 +56,13 @@ class SimpleEnv(gym.Env):
         self.dt = 1./self.fps
 
         # Set initial position for the agent
-        self.init_position = self._get_random_position(clearance=100)
+        self.init_position = INIT_POS
 
         # agent
         self.agent = SimpleAgent(*self.init_position, self.xmax, self.ymax)
 
         # Generate circles as tuples ((x, y), radius, (R,G,B))
-        self.circles, self.circles_shapely, self.circles_positions = self._generate_circles(n_circles=N_CIRCLES, clearance=100)
+        self.circles, self.circles_shapely, self.circles_positions = self._generate_fixed_circles(n_circles=N_CIRCLES)
 
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
@@ -101,7 +104,7 @@ class SimpleEnv(gym.Env):
                     return False
             return True
 
-    def _generate_circles(self, n_circles=3, clearance=100):
+    def _generate_random_circles(self, n_circles=3, clearance=100):
         """
         Function to generate n circles for our environment
         :param clearance: clearance from the screen edges
@@ -124,12 +127,32 @@ class SimpleEnv(gym.Env):
 
         return self.circles, self.circles_shapely, self.positions
 
+    def _generate_fixed_circles(self, n_circles=3):
+        """
+        Function to generate n fixed circles for our environment
+        :param clearance: clearance from the screen edges
+        :return: dictionary with all the circles
+        """
+        self.circles = {}
+        self.circles_shapely = {}
+        self.positions = [] # To precompute positions for observation space
+
+        for i in range(n_circles):
+            circle = [FIXED_POSITIONS[i], 40,
+                      (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1))]
+            self.circles[i] = circle
+            self.circles_shapely[i] = Point(*circle[0]).buffer(circle[1])
+            self.positions.append(circle[0][0])
+            self.positions.append(circle[0][1])
+
+        return self.circles, self.circles_shapely, self.positions
+
     def _get_random_position(self, clearance=20) -> tuple:
         """
-    Returns a random (x, y) position with a given padding to the screen
-    :param clearance: minimum distance to the border
-    :return: tuple
-    """
+        Returns a random (x, y) position with a given padding to the screen
+        :param clearance: minimum distance to the border
+        :return: tuple
+        """
         return random.randint(clearance, self.xmax - clearance), random.randint(clearance, self.ymax - clearance)
 
     def _seed(self, seed=None):
@@ -231,13 +254,13 @@ class SimpleEnv(gym.Env):
         self.done = False  # True if we have visited all circles
 
         # Define circles as tuples ((x, y), radius)
-        self.circles, self.circles_shapely, self.circles_positions = self._generate_circles(n_circles=3, clearance=100)
+        self.circles, self.circles_shapely, self.circles_positions = self._generate_fixed_circles(n_circles=N_CIRCLES)
 
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
 
         # Set initial position for the agent
-        self.init_position = self._get_random_position(clearance=100)
+        self.init_position = INIT_POS
 
         # Create car
         self.agent = SimpleAgent(*self.init_position, self.xmax, self.ymax)
