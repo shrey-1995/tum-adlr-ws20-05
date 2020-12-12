@@ -1,9 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from datetime import datetime
-from ddpg.models import Critic_gen, Actor_gen
+from ddpg_implementation.models import Actor_gen, Critic_gen
 from collections import deque
-from sys import exit
 import random
 
 class Buffer:
@@ -109,8 +107,6 @@ class DDPGAgent:
         R = np.asarray(R, dtype=np.float32)
         X2 = np.asarray(X2, dtype=np.float32)
 
-        Xten = tf.convert_to_tensor(X)
-
         # Updating Ze Critic
         with tf.GradientTape() as tape:
             A2 = self.mu_target(X2)
@@ -130,7 +126,6 @@ class DDPGAgent:
         self.mu_losses.append(mu_loss)
         self.mu_optimizer.apply_gradients(zip(grads_mu, self.mu.trainable_variables))
 
-        # update target networks
         ## Updating both netwokrs
         # # updating q_mu network
 
@@ -145,7 +140,7 @@ class DDPGAgent:
         temp3 = self.tau * temp2 + (1 - self.tau) * temp1
         self.mu_target.set_weights(temp3)
 
-        self.mu_target.save('./models/mu_target.h5')
-        self.q_mu_target.save('./models/q_mu_target.h5')
-        self.mu.save('./models/mu.h5')
-        self.q_mu.save('./models/q_mu.h5')
+        self.mu_target.save('./models_output/mu_target.h5')
+        self.q_mu_target.save('./models_output/q_mu_target.h5')
+        self.mu.save('./models_output/mu.h5')
+        self.q_mu.save('./models_output/q_mu.h5')

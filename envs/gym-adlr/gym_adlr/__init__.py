@@ -1,6 +1,6 @@
 from gym.envs.registration import register
 
 register(
-    id='toy-v0',
-    entry_point='gym_adlr.envs:ToyEnv',
+    id='simple-env-v0',
+    entry_point='gym_adlr.envs:SimpleEnv',
 )

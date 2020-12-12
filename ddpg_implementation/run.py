@@ -1,4 +1,4 @@
-from ddpg.ddpg import DDPGAgent
+from ddpg_implementation.ddpg import DDPGAgent
 import numpy as np
 import gym
 import os
@@ -47,7 +47,7 @@ def trainer(env, agent, max_episodes, max_steps, batch_size, action_noise, rende
 
 
 if __name__ == "__main__":
-    env = gym.make("LunarLanderContinuous-v2")
+    env = gym.make('gym_adlr.envs:simple-env-v0')
 
     max_episodes = 20
     max_steps = 500
@@ -60,8 +60,8 @@ if __name__ == "__main__":
     actor_lr = 1e-3
 
     agent = DDPGAgent(env, gamma, tau, buffer_maxlen, critic_lr, actor_lr)
-    episode_rewards = trainer(env, agent, max_episodes, max_steps, batch_size, action_noise=0.1, render=False)
+    episode_rewards = trainer(env, agent, max_episodes, max_steps, batch_size, action_noise=0.1, render=True)
 
-    with open('./output/episode_rewards_lunar.txt', 'w') as f:
+    with open('./output/episode_rewards_env.txt', 'w') as f:
         for item in episode_rewards:
             f.write("%s\n" % item)

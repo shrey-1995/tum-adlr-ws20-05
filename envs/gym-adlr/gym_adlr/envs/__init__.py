@@ -1,1 +1,1 @@
-from gym_adlr.envs.toy_env import ToyEnv
+from gym_adlr.envs.simple_env import SimpleEnv
