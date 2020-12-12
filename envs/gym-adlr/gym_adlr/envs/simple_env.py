@@ -162,7 +162,7 @@ class SimpleEnv(gym.Env):
         # End if agent achieved nothing and return negative reward
         # TODO: fix actions limit
         if self.t > self.dt*100: # After 100 actions
-            return self.observation_space, -200, True, self.visited
+            return self.observation_space, self.reward-200, True, self.visited
 
         if action is not None:
             pos, speed = self.agent.step(action, self.dt)
