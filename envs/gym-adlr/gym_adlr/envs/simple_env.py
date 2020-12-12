@@ -160,7 +160,7 @@ class SimpleEnv(gym.Env):
         x_prev, y_prev = self.agent.get_position()
 
         # End if agent achieved nothing and return negative reward
-        if self.t > 120:
+        if self.t > self.dt*500: # After 500 actions
             return self.observation_space, -200, True, self.visited
 
         if action is not None:
