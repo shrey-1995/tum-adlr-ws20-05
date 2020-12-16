@@ -20,7 +20,7 @@ INIT_POS = (20, 480)
 
 SPARSE = False
 
-EPISODE_LENGTH = 150
+EPISODE_LENGTH = 100 # Maximum number of actions that can be taken
 
 if SPARSE:
     #### SPARSE SETTING
@@ -30,8 +30,8 @@ if SPARSE:
     FINISHING_REWARD = 500
 else:
     #### NON SPARSE SETTING
-    INIT_REWARD = 300
-    STEP_REWARD = 0.1  # this value will be substracted during each step
+    INIT_REWARD = 0
+    STEP_REWARD = 0.2  # this value will be substracted during each step
     VISITING_CIRCLE_REWARD = 30
     FINISHING_REWARD = 500
 
@@ -78,14 +78,12 @@ class SimpleEnv(gym.Env):
         # s (list): The state. Attributes:
         #                   s[0] is the horizontal position
         #                   s[1] is the vertical position
-        #                   s[2] is the horizontal speed
-        #                   s[3] is the vertical speed
-        #                   s[4:4+N_CIRCLES] X coordinates for each circle
-        #                   s[4+N_CIRCLES:4+N_CIRCLES*2] Y coordinates for each circle
-        #                   s[4+N_CIRCLES*2:4+N_CIRCLES*2+N_CIRCLES] boolean determining if circles were visited
+        #                   s[2:2+N_CIRCLES] X coordinates for each circle
+        #                   s[2+N_CIRCLES:2+N_CIRCLES*2] Y coordinates for each circle
+        #                   s[2+N_CIRCLES*2:2+N_CIRCLES*2+N_CIRCLES] boolean determining if circles were visited
 
-        lower_bound_obs_space = np.array([0, 0, -1., -1.] + [0]*N_CIRCLES*2 + [0]*N_CIRCLES)
-        upper_bound_obs_space = np.array([WINDOW_W, WINDOW_H, 1., 1.] + [WINDOW_W]*2*N_CIRCLES + [1]*N_CIRCLES)
+        lower_bound_obs_space = np.array([0, 0] + [0]*N_CIRCLES*2 + [0]*N_CIRCLES)
+        upper_bound_obs_space = np.array([WINDOW_W, WINDOW_H] + [WINDOW_W]*2*N_CIRCLES + [1]*N_CIRCLES)
 
         self.observation_space = spaces.Box(
             lower_bound_obs_space, upper_bound_obs_space, dtype=np.float32
@@ -190,9 +188,7 @@ class SimpleEnv(gym.Env):
             return self.observation_space, self.reward-200, True, self.visited
 
         if action is not None:
-            pos, speed = self.agent.step(action, self.dt)
-        else:
-            speed = (0., 0.)
+            pos = self.agent.step(action, self.dt)
 
         # Get new position
         x, y = self.agent.get_position()
@@ -228,7 +224,7 @@ class SimpleEnv(gym.Env):
             self.t += self.dt
 
         # Update obsetvation space
-        state = [x, y, speed[0], speed[1]] + self.circles_positions + list(self.visited)
+        state = [x, y] + self.circles_positions + list(self.visited)
 
         self.observation_space = np.array(state, dtype=np.float32)
 
@@ -238,8 +234,6 @@ class SimpleEnv(gym.Env):
         return self.observation_space, step_reward, self.done, self.visited
 
     def _destroy(self):
-        # Reset the view
-        self.viewer = None
 
         self.circles = {}
         self.circles_shapely = {}
@@ -273,8 +267,8 @@ class SimpleEnv(gym.Env):
 
     def render(self, mode='human'):
         """
-    Renders the environment to the screen.
-    """
+        Renders the environment to the screen.
+        """
         # If the view was not declared, show the window with given size
         if self.viewer is None:
             self.viewer = rendering.Viewer(WINDOW_W, WINDOW_H)
