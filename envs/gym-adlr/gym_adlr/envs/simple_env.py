@@ -52,11 +52,6 @@ class SimpleEnv(gym.Env):
         self.ymax = WINDOW_H
         self.viewer = None
 
-        # Set time for each step
-        self.fps = 10
-        self.t = 0.
-        self.dt = 1./self.fps
-
         # Set initial position for the agent
         self.init_position = INIT_POS
 
@@ -182,13 +177,8 @@ class SimpleEnv(gym.Env):
         # Store previous position to compute trajectory
         x_prev, y_prev = self.agent.get_position()
 
-        # End if agent achieved nothing and return negative reward
-        # TODO: fix actions limit
-        if self.t > self.dt*EPISODE_LENGTH: # After 100 actions
-            return self.observation_space, self.reward-200, True, self.visited
-
         if action is not None:
-            pos = self.agent.step(action, self.dt)
+            pos = self.agent.step(action)
 
         # Get new position
         x, y = self.agent.get_position()
@@ -221,8 +211,6 @@ class SimpleEnv(gym.Env):
             # Update previous reward with current
             self.prev_reward = self.reward
 
-            self.t += self.dt
-
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited)
 
@@ -237,8 +225,6 @@ class SimpleEnv(gym.Env):
 
         self.circles = {}
         self.circles_shapely = {}
-
-        self.t = 0.
 
     def reset(self):
         self._destroy()

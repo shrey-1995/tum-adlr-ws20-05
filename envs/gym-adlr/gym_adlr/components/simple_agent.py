@@ -12,7 +12,7 @@ class SimpleAgent:
         self.xmin = WIDTH/2
         self.ymin = HEIGHT/2
 
-    def step(self, action, dt):
+    def step(self, action):
         # Action is defined as the movement in both axis (movement_x, movement_y)
         # dt is time for the step
 
