@@ -15,7 +15,7 @@ WINDOW_H = WINDOW_W
 
 N_CIRCLES = 3
 
-FIXED_POSITIONS = [(350, 80), (300, 400), (200, 200)]
+FIXED_POSITIONS = [(350, 80), (300, 400), (100, 200)]
 INIT_POS = (WINDOW_W/2, WINDOW_H/2)
 
 SPARSE = False
@@ -31,8 +31,8 @@ if SPARSE:
 else:
     #### NON SPARSE SETTING
     INIT_REWARD = 0
-    STEP_REWARD = 0.2  # this value will be substracted during each step
-    VISITING_CIRCLE_REWARD = 30
+    STEP_REWARD = 0.1  # this value will be substracted during each step
+    VISITING_CIRCLE_REWARD = 100
     FINISHING_REWARD = 500
 
 
