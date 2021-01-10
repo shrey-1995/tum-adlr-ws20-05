@@ -8,8 +8,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
 
-from sac.models import SoftQNetwork, PolicyNetwork
-from sac.buffer import BasicBuffer
+from common.models import SoftQNetwork, PolicyNetwork
+from common.buffer import BasicBuffer
 
 class SACAgent:
 

@@ -16,7 +16,7 @@ class SimpleAgent:
         # Action is defined as the movement in both axis (movement_x, movement_y)
         # dt is time for the step
 
-        assert len(action)==2, "Action must be a 2-dimensional tuple"
+        #assert len(action)==2, "Action must be a 2-dimensional tuple"
 
         # Compute new position
         new_pos_x = self.position[0] + action[0]

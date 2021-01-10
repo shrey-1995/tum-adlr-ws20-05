@@ -36,7 +36,7 @@ else:
     FINISHING_REWARD = 500
 
 
-class SimpleEnv(gym.Env):
+class SimpleEnvClean(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
@@ -209,9 +209,9 @@ class SimpleEnv(gym.Env):
 
             diff = self.prev_dist-curr_dist
 
-            step_reward += diff
-
             self.prev_dist = curr_dist
+
+            step_reward += diff
 
             if intersection is not None:
                 self.visited[intersection] = 1
@@ -230,9 +230,7 @@ class SimpleEnv(gym.Env):
         if render:
             self.render()
 
-        print(step_reward[1])
-
-        return self.observation_space, step_reward[1], self.done, self.visited
+        return self.observation_space, step_reward, self.done, self.visited
 
     def _destroy(self):
 
@@ -306,7 +304,7 @@ class SimpleEnv(gym.Env):
 
 
 if __name__ == '__main__':
-    env = SimpleEnv()
+
     env.reset()
 
     while True:

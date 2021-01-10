@@ -40,7 +40,7 @@ def trainer(env, max_episodes, max_steps, batch_size, render=True):
     return episode_rewards
 
 if __name__ == "__main__":
-    env = gym.make('gym_adlr.envs:simple-env-v0')
+    env = gym.make('gym_adlr.envs:simple-env-clean-v0')
 
     # Hyperparameters
     max_episodes = 50
