@@ -32,7 +32,10 @@ def main():
                       max_episodes=max_episodes,
                       max_steps=max_steps,
                       training_batch_size=training_batch_size,
-                      schedule_period=schedule_period)
+                      schedule_period=schedule_period,
+                      storing_frequence=1,
+                      store_path="./checkpoints/simple_env/{}_{}.checkpoint",
+                      load_from=None)
 
     agent.train()
 
