@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     # Hyperparameters
     max_episodes = 50
-    max_steps = 3000
+    max_steps = 100
     batch_size = 64
     render=True
 

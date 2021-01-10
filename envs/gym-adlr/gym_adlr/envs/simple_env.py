@@ -7,6 +7,7 @@ import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
 from gym_adlr.components.simple_agent import SimpleAgent
+import math
 
 STATE_W = 96
 STATE_H = 96
@@ -17,8 +18,7 @@ N_CIRCLES = 3
 
 FIXED_POSITIONS = [(350, 80), (300, 400), (100, 200)]
 INIT_POS = (WINDOW_W/2, WINDOW_H/2)
-
-SPARSE = False
+SPARSE = True
 
 EPISODE_LENGTH = 100 # Maximum number of actions that can be taken
 
@@ -26,7 +26,7 @@ if SPARSE:
     #### SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0
-    VISITING_CIRCLE_REWARD = 0
+    VISITING_CIRCLE_REWARD = 100
     FINISHING_REWARD = 500
 else:
     #### NON SPARSE SETTING
@@ -60,6 +60,12 @@ class SimpleEnv(gym.Env):
 
         # Generate circles as tuples ((x, y), radius, (R,G,B))
         self.circles, self.circles_shapely, self.circles_positions = self._generate_fixed_circles(n_circles=N_CIRCLES)
+
+        # Compute mindist
+        self.prev_dist = np.zeros(3)
+        self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(self.init_position[1] - self.circles[0][0][1], 2))
+        self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(self.init_position[1] - self.circles[1][0][1], 2))
+        self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(self.init_position[1] - self.circles[2][0][1], 2))
 
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
@@ -131,10 +137,10 @@ class SimpleEnv(gym.Env):
         self.circles = {}
         self.circles_shapely = {}
         self.positions = [] # To precompute positions for observation space
-
+        color = [(1,0,0),(0,1,0),(0,0,1)]
         for i in range(n_circles):
             circle = [FIXED_POSITIONS[i], 40,
-                      (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1))]
+                      color[i]]
             self.circles[i] = circle
             self.circles_shapely[i] = Point(*circle[0]).buffer(circle[1])
             self.positions.append(circle[0][0])
@@ -184,32 +190,37 @@ class SimpleEnv(gym.Env):
         x, y = self.agent.get_position()
 
         # Init variables
-        step_reward = 0
+        step_reward = np.zeros(3)
         done = False
 
         if action is not None:  # First step without action, called from reset()
             # We discount reward for not reaching objectives
-            self.reward -= STEP_REWARD
+            step_reward -= STEP_REWARD
 
             # Compute trajectory in this step and check intersection with circles
             trajectory = LineString([(x_prev, y_prev), (x, y)])
             intersection = self._check_collision(self.circles_shapely, trajectory)
 
-            # If there is a new intersection, include it and reward agent
-            if intersection is not None and self.visited[intersection] == 0:
+            # Compute reward for auxiliary tasks
+            curr_dist = np.zeros(3)
+            curr_dist[0] = math.sqrt(math.pow(x - self.circles[0][0][0], 2) + math.pow(y - self.circles[0][0][1], 2))
+            curr_dist[1] = math.sqrt(math.pow(x - self.circles[1][0][0], 2) + math.pow(y - self.circles[1][0][1], 2))
+            curr_dist[2] = math.sqrt(math.pow(x- self.circles[2][0][0], 2) + math.pow(y - self.circles[2][0][1], 2))
+
+            diff = self.prev_dist-curr_dist
+
+            step_reward += diff
+
+            self.prev_dist = curr_dist
+
+            if intersection is not None:
                 self.visited[intersection] = 1
-                self.reward += VISITING_CIRCLE_REWARD
+                step_reward[intersection] += VISITING_CIRCLE_REWARD
 
             # Check if we finished visiting all circles
             if np.sum(self.visited) == len(self.circles.keys()):
                 self.done = True
-                self.reward += FINISHING_REWARD
-
-            # Compute how much reward we achieved in this step
-            step_reward = self.reward - self.prev_reward
-
-            # Update previous reward with current
-            self.prev_reward = self.reward
+                step_reward[intersection] += FINISHING_REWARD
 
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited)
@@ -219,7 +230,9 @@ class SimpleEnv(gym.Env):
         if render:
             self.render()
 
-        return self.observation_space, step_reward, self.done, self.visited
+        print(step_reward[1])
+
+        return self.observation_space, step_reward[1], self.done, self.visited
 
     def _destroy(self):
 
@@ -243,6 +256,11 @@ class SimpleEnv(gym.Env):
 
         # Set initial position for the agent
         self.init_position = INIT_POS
+
+        # Reset minimum distance
+        self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(self.init_position[1] - self.circles[0][0][1], 2))
+        self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(self.init_position[1] - self.circles[1][0][1], 2))
+        self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(self.init_position[1] - self.circles[2][0][1], 2))
 
         # Create car
         self.agent = SimpleAgent(*self.init_position, self.xmax, self.ymax)
