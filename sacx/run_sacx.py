@@ -16,9 +16,9 @@ def main():
     p_lr = 3e-4
     buffer_maxlen = 1000000
     max_episodes = 100
-    max_steps = 300
+    max_steps = 480
     training_batch_size = 64
-    schedule_period = 100
+    schedule_period = 160
 
     agent = SACXAgent(env=env,
                       gamma=gamma,

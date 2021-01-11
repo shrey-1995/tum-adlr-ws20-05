@@ -31,8 +31,8 @@ if SPARSE:
 else:
     #### NON SPARSE SETTING
     INIT_REWARD = 0
-    STEP_REWARD = 0  # this value will be substracted during each step
-    VISITING_CIRCLE_REWARD = 100
+    STEP_REWARD = 0.1  # this value will be substracted during each step
+    VISITING_CIRCLE_REWARD = 150
     FINISHING_REWARD = 500
 
 
@@ -62,7 +62,7 @@ class SimpleEnvClean(gym.Env):
         self.circles, self.circles_shapely, self.circles_positions = self._generate_fixed_circles(n_circles=N_CIRCLES)
 
         # Compute mindist
-        self.prev_dist = np.zeros(3)
+        self.prev_dist = np.zeros(4)
         self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(
             self.init_position[1] - self.circles[0][0][1], 2))
         self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(
@@ -195,19 +195,19 @@ class SimpleEnvClean(gym.Env):
         x, y = self.agent.get_position()
 
         # Init variables
-        step_reward = np.zeros(3)
+        step_reward = np.zeros(4)
         done = False
 
         if action is not None:  # First step without action, called from reset()
             # We discount reward for not reaching objectives
-            step_reward -= STEP_REWARD
+            step_reward[3] -= STEP_REWARD
 
             # Compute trajectory in this step and check intersection with circles
             trajectory = LineString([(x_prev, y_prev), (x, y)])
             intersection = self._check_collision(self.circles_shapely, trajectory)
 
             # Compute reward for auxiliary tasks
-            curr_dist = np.zeros(3)
+            curr_dist = np.zeros(4)
             curr_dist[0] = math.sqrt(math.pow(x - self.circles[0][0][0], 2) + math.pow(y - self.circles[0][0][1], 2))
             curr_dist[1] = math.sqrt(math.pow(x - self.circles[1][0][0], 2) + math.pow(y - self.circles[1][0][1], 2))
             curr_dist[2] = math.sqrt(math.pow(x - self.circles[2][0][0], 2) + math.pow(y - self.circles[2][0][1], 2))
@@ -219,14 +219,18 @@ class SimpleEnvClean(gym.Env):
             if not SPARSE:
                 step_reward += diff
 
-            if intersection is not None:
-                self.visited[intersection] = 1
-                step_reward[intersection] += VISITING_CIRCLE_REWARD
-
-            # Check if we finished visiting all circles
-            if np.sum(self.visited) == len(self.circles.keys()):
-                self.done = True
-                step_reward[intersection] += FINISHING_REWARD
+            if intersection is not None and self.visited[intersection] == 0:
+                if intersection == self.sequence[0]:
+                    self.visited[intersection] = 1
+                    step_reward[3] += VISITING_CIRCLE_REWARD
+                elif intersection == self.sequence[1] and self.visited[self.sequence[0]] == 1:
+                    self.visited[intersection] = 1
+                    step_reward[3] += VISITING_CIRCLE_REWARD
+                # Check if we finished visiting all circles
+                elif intersection == self.sequence[2] and np.sum(self.visited) == 2:
+                    self.visited[intersection] = 1
+                    self.done = True
+                    step_reward[3] += FINISHING_REWARD
 
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited)
@@ -268,7 +272,7 @@ class SimpleEnvClean(gym.Env):
             self.init_position[1] - self.circles[1][0][1], 2))
         self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(
             self.init_position[1] - self.circles[2][0][1], 2))
-
+        self.prev_dist[3] = 0
         # Create car
         self.agent = SimpleAgent(*self.init_position, self.xmax, self.ymax)
 

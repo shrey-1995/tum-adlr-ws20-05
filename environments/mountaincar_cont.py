@@ -34,8 +34,8 @@ class MountainCarState(State):
 RED = Task("Red circle")
 GREEN = Task("Green circle")
 BLUE = Task("Blue circle")
-
-TASKS = [RED, GREEN, BLUE]
+MAIN_TASK = Task("Main Task")
+TASKS = [RED, GREEN, BLUE, MAIN_TASK]
 
 
 class MountainCar(TaskEnvironment):
