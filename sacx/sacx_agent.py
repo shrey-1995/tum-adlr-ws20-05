@@ -158,7 +158,7 @@ class SACXAgent():
                 action = self.get_action(state, task) # Sample new action using the task policy network
                 next_state, reward, done, _ = self.env.step(action)
                 self.replay_buffer.push(state, action, reward, next_state, done)
-                episode_reward += reward
+                episode_reward += reward[task]
 
                 if done or step == self.max_steps - 1:
                     episode_rewards.append(episode_reward)
