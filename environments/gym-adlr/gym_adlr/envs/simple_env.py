@@ -17,10 +17,10 @@ WINDOW_H = WINDOW_W
 N_CIRCLES = 3
 
 FIXED_POSITIONS = [(350, 80), (300, 400), (100, 200)]
-INIT_POS = (WINDOW_W/2, WINDOW_H/2)
+INIT_POS = (WINDOW_W / 2, WINDOW_H / 2)
 SPARSE = True
 
-EPISODE_LENGTH = 100 # Maximum number of actions that can be taken
+EPISODE_LENGTH = 100  # Maximum number of actions that can be taken
 
 if SPARSE:
     #### SPARSE SETTING
@@ -63,9 +63,12 @@ class SimpleEnvClean(gym.Env):
 
         # Compute mindist
         self.prev_dist = np.zeros(3)
-        self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(self.init_position[1] - self.circles[0][0][1], 2))
-        self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(self.init_position[1] - self.circles[1][0][1], 2))
-        self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(self.init_position[1] - self.circles[2][0][1], 2))
+        self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(
+            self.init_position[1] - self.circles[0][0][1], 2))
+        self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(
+            self.init_position[1] - self.circles[1][0][1], 2))
+        self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(
+            self.init_position[1] - self.circles[2][0][1], 2))
 
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
@@ -75,6 +78,8 @@ class SimpleEnvClean(gym.Env):
             np.array([-3, -3]), np.array([+3, +3]), dtype=np.float32
         )
 
+        print("SPARSE = {}".format(SPARSE))
+
         # Observation space
         # s (list): The state. Attributes:
         #                   s[0] is the horizontal position
@@ -83,8 +88,8 @@ class SimpleEnvClean(gym.Env):
         #                   s[2+N_CIRCLES:2+N_CIRCLES*2] Y coordinates for each circle
         #                   s[2+N_CIRCLES*2:2+N_CIRCLES*2+N_CIRCLES] boolean determining if circles were visited
 
-        lower_bound_obs_space = np.array([0, 0] + [0]*N_CIRCLES*2 + [0]*N_CIRCLES)
-        upper_bound_obs_space = np.array([WINDOW_W, WINDOW_H] + [WINDOW_W]*2*N_CIRCLES + [1]*N_CIRCLES)
+        lower_bound_obs_space = np.array([0, 0] + [0] * N_CIRCLES * 2 + [0] * N_CIRCLES)
+        upper_bound_obs_space = np.array([WINDOW_W, WINDOW_H] + [WINDOW_W] * 2 * N_CIRCLES + [1] * N_CIRCLES)
 
         self.observation_space = spaces.Box(
             lower_bound_obs_space, upper_bound_obs_space, dtype=np.float32
@@ -113,7 +118,7 @@ class SimpleEnvClean(gym.Env):
         """
         self.circles = {}
         self.circles_shapely = {}
-        self.positions = [] # To precompute positions for observation space
+        self.positions = []  # To precompute positions for observation space
         done = 0
 
         while done < n_circles:
@@ -136,8 +141,8 @@ class SimpleEnvClean(gym.Env):
         """
         self.circles = {}
         self.circles_shapely = {}
-        self.positions = [] # To precompute positions for observation space
-        color = [(1,0,0),(0,1,0),(0,0,1)]
+        self.positions = []  # To precompute positions for observation space
+        color = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
         for i in range(n_circles):
             circle = [FIXED_POSITIONS[i], 40,
                       color[i]]
@@ -205,13 +210,14 @@ class SimpleEnvClean(gym.Env):
             curr_dist = np.zeros(3)
             curr_dist[0] = math.sqrt(math.pow(x - self.circles[0][0][0], 2) + math.pow(y - self.circles[0][0][1], 2))
             curr_dist[1] = math.sqrt(math.pow(x - self.circles[1][0][0], 2) + math.pow(y - self.circles[1][0][1], 2))
-            curr_dist[2] = math.sqrt(math.pow(x- self.circles[2][0][0], 2) + math.pow(y - self.circles[2][0][1], 2))
+            curr_dist[2] = math.sqrt(math.pow(x - self.circles[2][0][0], 2) + math.pow(y - self.circles[2][0][1], 2))
 
-            diff = self.prev_dist-curr_dist
+            diff = self.prev_dist - curr_dist
 
             self.prev_dist = curr_dist
 
-            step_reward += diff
+            if not SPARSE:
+                step_reward += diff
 
             if intersection is not None:
                 self.visited[intersection] = 1
@@ -256,9 +262,12 @@ class SimpleEnvClean(gym.Env):
         self.init_position = INIT_POS
 
         # Reset minimum distance
-        self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(self.init_position[1] - self.circles[0][0][1], 2))
-        self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(self.init_position[1] - self.circles[1][0][1], 2))
-        self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(self.init_position[1] - self.circles[2][0][1], 2))
+        self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(
+            self.init_position[1] - self.circles[0][0][1], 2))
+        self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(
+            self.init_position[1] - self.circles[1][0][1], 2))
+        self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(
+            self.init_position[1] - self.circles[2][0][1], 2))
 
         # Create car
         self.agent = SimpleAgent(*self.init_position, self.xmax, self.ymax)

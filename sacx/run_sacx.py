@@ -16,7 +16,7 @@ def main():
     p_lr = 3e-4
     buffer_maxlen = 1000000
     max_episodes = 500
-    max_steps = 600
+    max_steps = 1500
     training_batch_size = 64
     schedule_period = 200
 
@@ -33,11 +33,12 @@ def main():
                       max_steps=max_steps,
                       training_batch_size=training_batch_size,
                       schedule_period=schedule_period,
-                      storing_frequence=1,
-                      store_path="./checkpoints/simple_env/{}_{}.checkpoint",
+                      storing_frequence=20,
+                      store_path="./checkpoints/simple_env/sparse_{}_{}.checkpoint",
                       load_from=None)
 
-    agent.train()
+    rewards = agent.train()
+    agent.store_rewards(rewards, filename="./results/dense_3_auxiliary.txt")
 
 
 if __name__ == "__main__":

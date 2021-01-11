@@ -140,7 +140,7 @@ class SACXAgent():
 
         return self.rescale_action(action)
 
-    def train(self, render=True):
+    def train(self):
         episode_rewards = []
 
         for episode in range(self.max_episodes):
@@ -275,3 +275,8 @@ class SACXAgent():
 
     def schedule_task(self):
         return random.choice([i for i in range(len(self.tasks))])
+
+    def store_rewards(self, episode_rewards, filename):
+        with open(filename, 'w') as f:
+            for item in episode_rewards:
+                f.write("%s\n" % item)
