@@ -18,7 +18,7 @@ N_CIRCLES = 3
 
 FIXED_POSITIONS = [(350, 80), (300, 400), (100, 200)]
 INIT_POS = (WINDOW_W / 2, WINDOW_H / 2)
-SPARSE = True
+SPARSE = False
 
 EPISODE_LENGTH = 100  # Maximum number of actions that can be taken
 
@@ -31,7 +31,7 @@ if SPARSE:
 else:
     #### NON SPARSE SETTING
     INIT_REWARD = 0
-    STEP_REWARD = 0.1  # this value will be substracted during each step
+    STEP_REWARD = 0  # this value will be substracted during each step
     VISITING_CIRCLE_REWARD = 100
     FINISHING_REWARD = 500
 

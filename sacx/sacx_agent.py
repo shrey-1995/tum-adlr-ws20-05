@@ -276,7 +276,9 @@ class SACXAgent():
     def schedule_task(self):
         return random.choice([i for i in range(len(self.tasks))])
 
-    def store_rewards(self, episode_rewards, filename):
+    def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:
+            f.write("{}\n".format(max_steps))
+            f.write("{}\n".format(scheduler_period))
             for item in episode_rewards:
-                f.write("%s\n" % item)
+                f.write("{}\n".format(item))

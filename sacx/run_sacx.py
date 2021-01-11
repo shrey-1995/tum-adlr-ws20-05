@@ -15,10 +15,10 @@ def main():
     q_lr = 3e-4
     p_lr = 3e-4
     buffer_maxlen = 1000000
-    max_episodes = 500
-    max_steps = 1500
+    max_episodes = 100
+    max_steps = 300
     training_batch_size = 64
-    schedule_period = 200
+    schedule_period = 100
 
     agent = SACXAgent(env=env,
                       gamma=gamma,
@@ -38,7 +38,7 @@ def main():
                       load_from=None)
 
     rewards = agent.train()
-    agent.store_rewards(rewards, filename="./results/dense_3_auxiliary.txt")
+    agent.store_rewards(rewards, max_steps, scheduler_period, filename="./results/dense_3_auxiliary.txt")
 
 
 if __name__ == "__main__":
