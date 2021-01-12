@@ -24,8 +24,8 @@ def trainer(env, max_episodes, max_steps, batch_size, render=True):
         for step in range(max_steps):
             action = agent.get_action(state)
             next_state, reward, done, _ = env.step(action, render)
-            agent.replay_buffer.push(state, action, reward, next_state, done)
-            episode_reward += reward
+            agent.replay_buffer.push(state, action, reward[3], next_state, done)
+            episode_reward += reward[3]
 
             if len(agent.replay_buffer) > batch_size:
                 agent.update(batch_size)
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     # Hyperparameters
     max_episodes = 50
-    max_steps = 100
+    max_steps = 2000
     batch_size = 64
     render=True
 
