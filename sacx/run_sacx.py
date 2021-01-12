@@ -14,7 +14,7 @@ def main():
     q_lr = 3e-4
     p_lr = 3e-4
     buffer_maxlen = 3000
-    max_episodes = 30
+    max_episodes = 20
     max_steps = 1400
     training_batch_size = 64
     schedule_period = 200
