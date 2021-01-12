@@ -3,8 +3,7 @@ from environments.mountaincar_cont import MountainCar as MountainCarCont
 
 
 def main():
-    steps_per_episode = 70
-    env = MountainCarCont(render=True, max_steps=steps_per_episode)
+    env = MountainCarCont(render=True)
     tasks = env.get_tasks()
 
     # SAC Params
@@ -15,8 +14,8 @@ def main():
     q_lr = 3e-4
     p_lr = 3e-4
     buffer_maxlen = 1000000
-    max_episodes = 100
-    max_steps = 480
+    max_episodes = 30
+    max_steps = 800
     training_batch_size = 64
     schedule_period = 160
 
@@ -33,12 +32,13 @@ def main():
                       max_steps=max_steps,
                       training_batch_size=training_batch_size,
                       schedule_period=schedule_period,
-                      storing_frequence=20,
+                      storing_frequence=10,
                       store_path="./checkpoints/simple_env/sparse_{}_{}.checkpoint",
                       load_from=None)
 
     rewards = agent.train()
-    agent.store_rewards(rewards, max_steps, scheduler_period, filename="./results/dense_3_auxiliary.txt")
+    agent.test()
+    agent.store_rewards(rewards, max_steps, schedule_period, filename="./results/dense_3_auxiliary.txt")
 
 
 if __name__ == "__main__":

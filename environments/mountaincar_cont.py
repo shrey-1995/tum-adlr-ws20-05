@@ -43,7 +43,7 @@ class MountainCar(TaskEnvironment):
         MountainCar environment class
     """
 
-    def __init__(self, render=False, max_steps=1000):
+    def __init__(self, render=False):
         """
         Create a new MountainCarEnvironment
         :param render: A boolean indicating whether the environment should be rendered
@@ -54,7 +54,6 @@ class MountainCar(TaskEnvironment):
         self.render = render
         self.terminal = False
         self.step_v = 0
-        self.max_steps = max_steps
         self.reset()
 
     def action_space(self) -> list:
@@ -86,7 +85,7 @@ class MountainCar(TaskEnvironment):
 
     @staticmethod
     def auxiliary_tasks() -> list:
-        return TASKS
+        return TASKS[:-1]
 
     @staticmethod
     def get_tasks():

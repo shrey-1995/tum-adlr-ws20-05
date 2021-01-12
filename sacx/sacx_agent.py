@@ -23,7 +23,7 @@ class SACXAgent():
                  max_steps,
                  training_batch_size,
                  schedule_period=100,
-                 storing_frequence=20,
+                 storing_frequence=10,
                  store_path="./checkpoints/simple_env/{}_{}.checkpoint",
                  load_from=None):
 
@@ -147,16 +147,17 @@ class SACXAgent():
             state = self.env.reset()
             episode_reward = 0
             scheduled_tasks = []
-
+            scheduled_task_step = 0
             for step in range(self.max_steps):
 
-                if step%self.schedule_period==0:
+                if (step-scheduled_task_step) % self.schedule_period == 0:
                     task = self.schedule_task()
                     scheduled_tasks.append(task)
+                    scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
 
                 action = self.get_action(state, task) # Sample new action using the task policy network
-                next_state, reward, done, _ = self.env.step(action)
+                next_state, reward, done, visited_circles = self.env.step(action)
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 episode_reward += reward[task]
 
@@ -171,7 +172,13 @@ class SACXAgent():
                     #print("Training")
                     self.update(self.training_batch_size)
 
-            if episode+1%self.storing_frequence == 0:
+                #Schedule new task
+                if visited_circles[task] == 1:
+                    task = self.schedule_task()
+                    scheduled_tasks.append(task)
+                    scheduled_task_step = step
+                    print("Switching to ", self.tasks[task])
+            if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
         return episode_rewards
@@ -243,22 +250,43 @@ class SACXAgent():
 
         self.update_step += 1
 
+    def test(self):
+        episode_rewards = []
+
+        for episode in range(3):
+            state = self.env.reset()
+            episode_reward = 0
+            for step in range(500):
+                action = self.get_action(state, 3)  # Sample new action using the main task policy network
+                next_state, reward, done, visited_circles = self.env.step(action)
+                episode_reward += reward[3]
+
+                if done or step == self.max_steps - 1:
+                    if done:
+                         print("Task completed")
+                    episode_rewards.append(episode_reward)
+                    print("Episode " + str(episode) + ": " + str(episode_reward))
+                    break
+
+                state = next_state
+
+        return episode_rewards
 
     def store_models(self):
         for i, p_net in enumerate(self.p_nets):
-            torch.save(p_net, self.store_path.format('p_net', i))
+            torch.save(p_net.state_dict(), self.store_path.format('p_net', i))
 
         for i, q_net in enumerate(self.q_nets1):
-            torch.save(q_net, self.store_path.format('q_net1', i))
+            torch.save(q_net.state_dict(), self.store_path.format('q_net1', i))
 
         for i, q_net in enumerate(self.q_nets2):
-            torch.save(q_net, self.store_path.format('q_net2', i))
+            torch.save(q_net.state_dict(), self.store_path.format('q_net2', i))
 
         for i, target_q_net in enumerate(self.target_q_nets1):
-            torch.save(target_q_net, self.store_path.format('target_q_net1', i))
+            torch.save(target_q_net.state_dict(), self.store_path.format('target_q_net1', i))
 
         for i, target_q_net in enumerate(self.target_q_nets2):
-            torch.save(target_q_net, self.store_path.format('target_q_net2', i))
+            torch.save(target_q_net.state_dict(), self.store_path.format('target_q_net2', i))
 
         for i, temperature in enumerate(self.entropy_temperatures):
             with open(self.store_path.format('temperature', i), 'wb') as f:
@@ -274,7 +302,7 @@ class SACXAgent():
             torch.save(q_opt, self.store_path.format('q2_optimizer', i))
 
     def schedule_task(self):
-        return random.choice([i for i in range(len(self.tasks))])
+        return random.choice([i for i in range(len(self.tasks)-1)])
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:
