@@ -25,7 +25,7 @@ EPISODE_LENGTH = 100  # Maximum number of actions that can be taken
 if SPARSE:
     #### SPARSE SETTING
     INIT_REWARD = 0
-    STEP_REWARD = 0
+    STEP_REWARD = 0.1
     VISITING_CIRCLE_REWARD = 100
     FINISHING_REWARD = 500
 else:
@@ -43,7 +43,7 @@ class SimpleEnvClean(gym.Env):
         self._seed()
 
         # Information about our reward
-        self.reward = np.zeros(4)
+        self.reward = INIT_REWARD
         self.visited = np.zeros(N_CIRCLES)
         self.done = False  # True if we have visited all circles
 
@@ -200,7 +200,7 @@ class SimpleEnvClean(gym.Env):
         visit = np.zeros(3)
         if action is not None:  # First step without action, called from reset()
             # We discount reward for not reaching objectives
-            self.reward[3] -= STEP_REWARD
+            self.reward -= STEP_REWARD
 
             # Compute trajectory in this step and check intersection with circles
             trajectory = LineString([(x_prev, y_prev), (x, y)])
@@ -219,9 +219,6 @@ class SimpleEnvClean(gym.Env):
             if not SPARSE:
                 step_reward += diff
 
-            for i in range(3):
-                self.reward[i] = step_reward[i]
-
             if intersection is not None:
                 # Preempt task on reaching the circle
                 visit[intersection] = 1
@@ -230,15 +227,15 @@ class SimpleEnvClean(gym.Env):
                         for i in range(1, 3):
                             self.visited[i] = 0
                         self.visited[intersection] = 1
-                        self.reward[3] += VISITING_CIRCLE_REWARD
+                        self.reward += VISITING_CIRCLE_REWARD
                     elif intersection == self.sequence[1] and self.visited[self.sequence[0]] == 1:
                         self.visited[intersection] = 1
-                        self.reward[3] += VISITING_CIRCLE_REWARD
+                        self.reward += VISITING_CIRCLE_REWARD
                     # Check if we finished visiting all circles
                     elif intersection == self.sequence[2] and np.sum(self.visited) == 2:
                         self.visited[intersection] = 1
                         self.done = True
-                        self.reward[3] += FINISHING_REWARD
+                        self.reward += FINISHING_REWARD
                     else:
                         for i in range(3):
                             if intersection != i:
@@ -251,7 +248,7 @@ class SimpleEnvClean(gym.Env):
 
         if render:
             self.render()
-
+        step_reward[3] = self.reward
         return self.observation_space, step_reward, self.done, visit
 
     def _destroy(self):
@@ -263,7 +260,7 @@ class SimpleEnvClean(gym.Env):
         self._destroy()
 
         # Information about our reward
-        self.reward = np.zeros(4)
+        self.reward = INIT_REWARD
         self.prev_reward = 0
         self.visited = np.zeros(N_CIRCLES)
         self.done = False  # True if we have visited all circles
