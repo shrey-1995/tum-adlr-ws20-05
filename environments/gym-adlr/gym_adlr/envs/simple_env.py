@@ -197,7 +197,6 @@ class SimpleEnvClean(gym.Env):
 
         # Init variables
         step_reward = np.zeros(4)
-        done = False
         visit = np.zeros(3)
         if action is not None:  # First step without action, called from reset()
             # We discount reward for not reaching objectives
@@ -220,20 +219,26 @@ class SimpleEnvClean(gym.Env):
             if not SPARSE:
                 step_reward += diff
 
+            # Preempt task on reaching the circle
             if intersection is not None:
-                step_reward[intersection] += VISITING_CIRCLE_REWARD
 
-                if intersection == self.visit_next:
-                    self.visited[intersection] = 1
-                    step_reward[3] += VISITING_CIRCLE_REWARD
-                    if np.sum(self.visited) == len(self.visited):
-                        self.done = True
-                        step_reward[3] += FINISHING_REWARD
 
+            if intersection is not None and intersection == self.sequence[self.visit_next]:
+                # Preempt task on reaching the circle
+                visit[intersection] = 1
+                self.visited[intersection] = 1
+                if intersection == self.sequence[2] and np.sum(self.visited) == 2:
+                    self.reward += FINISHING_REWARD
+                    self.visit_next = 0
+                    self.done = True
                 else:
-                    self.visit_next=0
-                    for i in range(len(self.visited)):
-                            self.visited[i] = 0
+                    self.reward += VISITING_CIRCLE_REWARD
+                    self.visit_next = self.visit_next + 1
+            elif intersection is not None:
+                visit[intersection] = 1
+                self.visit_next = 0
+                for i in range(len(self.visited)):
+                    self.visited[i] = 0
 
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited)
@@ -243,7 +248,7 @@ class SimpleEnvClean(gym.Env):
         if render:
             self.render()
 
-        #step_reward[3] = self.reward
+        step_reward[3] = self.reward
         return self.observation_space, step_reward, self.done, visit
 
     def _destroy(self):
@@ -259,7 +264,7 @@ class SimpleEnvClean(gym.Env):
         self.prev_reward = 0
         self.visited = np.zeros(N_CIRCLES)
         self.done = False  # True if we have visited all circles
-
+        self.visit_next = 0
         # Define circles as tuples ((x, y), radius)
         self.circles, self.circles_shapely, self.circles_positions = self._generate_fixed_circles(n_circles=N_CIRCLES)
 
