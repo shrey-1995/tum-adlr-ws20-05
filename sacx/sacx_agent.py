@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
 import pickle
+import torch.nn as nn
 
 from common.models import SoftQNetwork, PolicyNetwork
 from common.buffer import BasicBuffer
@@ -22,6 +23,7 @@ class SACXAgent():
                  max_episodes,
                  max_steps,
                  training_batch_size,
+                 share_layers=False,
                  schedule_period=100,
                  storing_frequence=10,
                  store_path="./checkpoints/simple_env/{}_{}.checkpoint",
@@ -49,34 +51,51 @@ class SACXAgent():
         self.max_steps = max_steps
         self.training_batch_size = training_batch_size
 
-        self.p_nets = self.init_p_models(load_from)
-        self.q_nets1, self.q_nets2, self.target_q_nets1, self.target_q_nets2 = self.init_q_models(load_from)
+        self.p_nets = self.init_p_models(load_from, share_layer=share_layers)
+        self.q_nets1, self.q_nets2, self.target_q_nets1, self.target_q_nets2 = self.init_q_models(load_from, share_layer=share_layers)
         self.q1_optimizers, self.q2_optimizers, self.policy_optimizers = self.init_optimizers(q_lr, p_lr, load_from)
         self.entropy_temperatures = self.init_temperatures(a_lr, alpha, load_from)
 
         self.replay_buffer = BasicBuffer(buffer_maxlen)
 
-    def init_p_models(self, load_path):
+    def init_p_models(self, load_path, share_layer):
         policy_nets = []
+
+        if share_layer is True:
+            shared_layer = nn.Linear(self.obs_dim, 256)
+        else:
+            shared_layer = None
+
         for i, task in enumerate(self.tasks):
             if load_path is None:
-                policy_nets.append(PolicyNetwork(self.obs_dim, self.action_dim).to(self.device))
+                policy_nets.append(PolicyNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer).to(self.device))
             else:
                 policy_nets.append(torch.load(load_path.format('p_net', i)))
         return policy_nets
 
-    def init_q_models(self, load_path):
+    def init_q_models(self, load_path, share_layer):
         q_nets1 = []
         q_nets2 = []
         target_q_nets1 = []
         target_q_nets2 = []
 
+        if share_layer is True:
+            shared_layer_1 = nn.Linear(self.obs_dim + self.action_dim, 256)
+            shared_layer_2 = nn.Linear(self.obs_dim + self.action_dim, 256)
+            shared_layer_t_1 = nn.Linear(self.obs_dim + self.action_dim, 256)
+            shared_layer_t_2 = nn.Linear(self.obs_dim + self.action_dim, 256)
+        else:
+            shared_layer_1 = None
+            shared_layer_2 = None
+            shared_layer_t_1 = None
+            shared_layer_t_2 = None
+
         for i, task in enumerate(self.tasks):
             if load_path is None:
-                q_nets1.append(SoftQNetwork(self.obs_dim, self.action_dim).to(self.device))
-                q_nets2.append(SoftQNetwork(self.obs_dim, self.action_dim).to(self.device))
-                target_q_nets1.append(SoftQNetwork(self.obs_dim, self.action_dim).to(self.device))
-                target_q_nets2.append(SoftQNetwork(self.obs_dim, self.action_dim).to(self.device))
+                q_nets1.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_1).to(self.device))
+                q_nets2.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_2).to(self.device))
+                target_q_nets1.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_t_1).to(self.device))
+                target_q_nets2.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_t_2).to(self.device))
 
                 # copy params to target param
                 for target_param, param in zip(target_q_nets1[i].parameters(), q_nets1[i].parameters()):
@@ -250,10 +269,11 @@ class SACXAgent():
 
         self.update_step += 1
 
-    def test(self):
+    def test(self, num_episodes=3):
         episode_rewards = []
 
-        for episode in range(3):
+        for episode in range(num_episodes):
+            print("Testing episode {}\n".format(episode))
             state = self.env.reset()
             episode_reward = 0
             for step in range(500):

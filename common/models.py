@@ -13,9 +13,12 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 class ValueNetwork(nn.Module):
 
-    def __init__(self, input_dim, output_dim, init_w=3e-3):
+    def __init__(self, input_dim, output_dim, init_w=3e-3, shared_layer=None):
         super(ValueNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 256)
+        if shared_layer is None:
+            self.fc1 = nn.Linear(input_dim, 256)
+        else:
+            self.fc1 = shared_layer
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, output_dim)
 
@@ -32,9 +35,12 @@ class ValueNetwork(nn.Module):
 
 class SoftQNetwork(nn.Module):
 
-    def __init__(self, num_inputs, num_actions, hidden_size=256, init_w=3e-3):
+    def __init__(self, num_inputs, num_actions, hidden_size=256, init_w=3e-3, shared_layer=None):
         super(SoftQNetwork, self).__init__()
-        self.linear1 = nn.Linear(num_inputs + num_actions, hidden_size)
+        if shared_layer is None:
+            self.linear1 = nn.Linear(num_inputs + num_actions, hidden_size)
+        else:
+            self.linear1 = shared_layer
         self.linear2 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, 1)
 
@@ -51,12 +57,16 @@ class SoftQNetwork(nn.Module):
 
 class PolicyNetwork(nn.Module):
 
-    def __init__(self, num_inputs, num_actions, hidden_size=256, init_w=3e-3, log_std_min=-20, log_std_max=2):
+    def __init__(self, num_inputs, num_actions, hidden_size=256, init_w=3e-3, log_std_min=-20, log_std_max=2, shared_layer=None):
         super(PolicyNetwork, self).__init__()
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
 
-        self.linear1 = nn.Linear(num_inputs, hidden_size)
+        if shared_layer is None:
+            self.linear1 = nn.Linear(num_inputs, hidden_size)
+        else:
+            self.linear1 = shared_layer
+
         self.linear2 = nn.Linear(hidden_size, hidden_size)
 
         self.mean_linear = nn.Linear(hidden_size, num_actions)
