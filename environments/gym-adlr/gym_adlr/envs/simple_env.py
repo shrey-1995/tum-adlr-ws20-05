@@ -73,7 +73,7 @@ class SimpleEnvClean(gym.Env):
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
         self.visit_next = 0
-
+        self.intersection_last = False
         # Action defined as acceleration in both axis
         self.action_space = spaces.Box(
             np.array([-3, -3]), np.array([+3, +3]), dtype=np.float32
@@ -219,26 +219,28 @@ class SimpleEnvClean(gym.Env):
             if not SPARSE:
                 step_reward += diff
 
-            # Preempt task on reaching the circle
-            if intersection is not None:
-
-
             if intersection is not None and intersection == self.sequence[self.visit_next]:
                 # Preempt task on reaching the circle
                 visit[intersection] = 1
                 self.visited[intersection] = 1
+                self.intersection_last = True
                 if intersection == self.sequence[2] and np.sum(self.visited) == 2:
                     self.reward += FINISHING_REWARD
-                    self.visit_next = 0
                     self.done = True
                 else:
                     self.reward += VISITING_CIRCLE_REWARD
-                    self.visit_next = self.visit_next + 1
             elif intersection is not None:
                 visit[intersection] = 1
-                self.visit_next = 0
+                self.intersection_last = True
+                self.reward = 0
                 for i in range(len(self.visited)):
                     self.visited[i] = 0
+                if intersection == self.sequence[0]:
+                    self.visited[0] = 1
+                    self.reward += VISITING_CIRCLE_REWARD
+            elif self.intersection_last:
+                self.visit_next += 1
+                self.intersection_last = False
 
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited)
@@ -265,6 +267,7 @@ class SimpleEnvClean(gym.Env):
         self.visited = np.zeros(N_CIRCLES)
         self.done = False  # True if we have visited all circles
         self.visit_next = 0
+        self.intersection_last = False
         # Define circles as tuples ((x, y), radius)
         self.circles, self.circles_shapely, self.circles_positions = self._generate_fixed_circles(n_circles=N_CIRCLES)
 
