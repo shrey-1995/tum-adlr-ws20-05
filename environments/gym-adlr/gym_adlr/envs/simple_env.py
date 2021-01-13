@@ -223,14 +223,14 @@ class SimpleEnvClean(gym.Env):
             if intersection is not None:
                 step_reward[intersection] += VISITING_CIRCLE_REWARD
                 self.visited[intersection] = 1
-                visit[intersection] = 1
 
                 if intersection == self.visit_next:
                     # Preempt task on reaching the circle
+                    visit[intersection] = 1
                     self.reward += VISITING_CIRCLE_REWARD
                     step_reward[3] = VISITING_CIRCLE_REWARD
                     self.visit_next+=1
-                    if np.sum(self.visited) == len(self.visited):
+                    if np.sum(visit) == len(self.visited):
                         self.done = True
                         step_reward[3] = FINISHING_REWARD
                         print("Done with reward: ", self.reward)
@@ -245,8 +245,8 @@ class SimpleEnvClean(gym.Env):
                     self.reward-=300
                     step_reward[3] = -300
 
-                    #for i in range(len(self.visited)):
-                            #self.visited[i] = 0
+                    for i in range(len(self.visited)):
+                            visit[intersection] = 0
 
                     if intersection==0:
                         self.reward+=VISITING_CIRCLE_REWARD

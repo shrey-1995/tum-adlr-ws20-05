@@ -172,7 +172,11 @@ class SACXAgent():
             for step in range(self.max_steps):
 
                 if (step-scheduled_task_step) % self.schedule_period == 0:
-                    task = self.schedule_task(task)
+                    if episode<30:
+                        task = self.schedule_task()
+                    else:
+                        task = self.schedule_task_oracle(task)
+
                     scheduled_tasks.append(task)
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
@@ -195,7 +199,10 @@ class SACXAgent():
 
                 #Schedule new task
                 if visited_circles[task] == 1:
-                    task = self.schedule_task(task)
+                    if episode < 30:
+                        task = self.schedule_task()
+                    else:
+                        task = self.schedule_task_oracle(task)
                     scheduled_tasks.append(task)
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
@@ -324,9 +331,11 @@ class SACXAgent():
         for i, q_opt in enumerate(self.q2_optimizers):
             torch.save(q_opt, self.store_path.format('q2_optimizer', i))
 
-    def schedule_task(self, last_task=-1):
-        return (last_task+1)%3
-        #return random.choice([i for i in range(len(self.tasks)-1)])
+    def schedule_task(self):
+        return random.choice([i for i in range(len(self.tasks)-1)])
+
+    def schedule_task_oracle(self, last_task=-1):
+        return (last_task + 1) % 3
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:
