@@ -200,7 +200,7 @@ class SACXAgent():
                 #Schedule new task
                 if task<3:
                     if visited_circles[task] == 1:
-                        if episode < 30:
+                        if episode < 15:
                             task = self.schedule_task()
                         else:
                             task = self.schedule_task_oracle(task)
@@ -336,7 +336,7 @@ class SACXAgent():
         return random.choice([i for i in range(len(self.tasks))])
 
     def schedule_task_oracle(self, last_task=-1):
-        return (last_task + 1) % 4
+        return (last_task + 1) % 3
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:
