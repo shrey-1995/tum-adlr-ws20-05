@@ -253,8 +253,6 @@ class SimpleEnvClean(gym.Env):
                         self.visited[0] = 1
                         step_reward += VISITING_CIRCLE_REWARD
 
-                    print("Error: ", step_reward)
-
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited)
 
