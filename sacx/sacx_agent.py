@@ -172,7 +172,7 @@ class SACXAgent():
             for step in range(self.max_steps):
 
                 if (step-scheduled_task_step) % self.schedule_period == 0:
-                    if episode<30:
+                    if episode<15:
                         task = self.schedule_task()
                     else:
                         task = self.schedule_task_oracle(task)
