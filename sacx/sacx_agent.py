@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.distributions import Normal
 import pickle
 import torch.nn as nn
+import numpy as np
 
 from common.models import SoftQNetwork, PolicyNetwork
 from common.buffer import BasicBuffer
@@ -181,16 +182,16 @@ class SACXAgent():
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 episode_reward += reward[task]
 
+                if len(self.replay_buffer) > self.training_batch_size:
+                    #print("Training")
+                    self.update(self.training_batch_size)
+
                 if done or step == self.max_steps - 1:
                     episode_rewards.append(episode_reward)
                     print("Episode " + str(episode) + ": " + str(episode_reward))
                     break
 
                 state = next_state
-
-                if len(self.replay_buffer) > self.training_batch_size:
-                    #print("Training")
-                    self.update(self.training_batch_size)
 
                 #Schedule new task
                 if visited_circles[task] == 1:

@@ -26,13 +26,13 @@ if SPARSE:
     #### SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0
-    VISITING_CIRCLE_REWARD = 100
+    VISITING_CIRCLE_REWARD = 0
     FINISHING_REWARD = 500
 else:
     #### NON SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0  # this value will be substracted during each step
-    VISITING_CIRCLE_REWARD = 150
+    VISITING_CIRCLE_REWARD = 0
     FINISHING_REWARD = 500
 
 
@@ -222,13 +222,12 @@ class SimpleEnvClean(gym.Env):
 
             if intersection is not None:
                 step_reward[intersection] += VISITING_CIRCLE_REWARD
+                self.visited[intersection] = 1
                 visit[intersection] = 1
 
                 if intersection == self.visit_next:
                     # Preempt task on reaching the circle
-                    self.visited[intersection] = 1
                     self.reward += VISITING_CIRCLE_REWARD
-                    print(self.reward)
                     self.visit_next+=1
                     if np.sum(self.visited) == len(self.visited):
                         self.done = True
@@ -240,15 +239,13 @@ class SimpleEnvClean(gym.Env):
 
                 else:
                     self.visit_next=0
-                    self.reward=0
-                    print(self.reward)
+                    self.reward-=300
 
-                    for i in range(len(self.visited)):
-                            self.visited[i] = 0
+                    #for i in range(len(self.visited)):
+                            #self.visited[i] = 0
 
                     if intersection==0:
                         self.reward+=VISITING_CIRCLE_REWARD
-                        print(self.reward)
                         self.visited[0] = 1
 
         # Update obsetvation space
@@ -259,7 +256,7 @@ class SimpleEnvClean(gym.Env):
         if render:
             self.render()
 
-        step_reward[3] = self.reward
+        step_reward[3] = step_reward[self.visit_next]+self.reward
         return self.observation_space, step_reward, self.done, visit
 
     def _destroy(self):
