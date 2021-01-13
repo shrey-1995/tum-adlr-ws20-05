@@ -198,7 +198,7 @@ class SACXAgent():
                 state = next_state
 
                 #Schedule new task
-                if task!=4:
+                if task<3:
                     if visited_circles[task] == 1:
                         if episode < 30:
                             task = self.schedule_task()
