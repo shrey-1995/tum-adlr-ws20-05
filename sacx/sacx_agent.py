@@ -199,6 +199,7 @@ class SACXAgent():
                     scheduled_tasks.append(task)
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
+
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
