@@ -6,6 +6,7 @@ from torch.distributions import Normal
 import pickle
 import torch.nn as nn
 import numpy as np
+from sacx.scheduler import Scheduler
 
 from common.models import SoftQNetwork, PolicyNetwork
 from common.buffer import BasicBuffer
@@ -58,6 +59,9 @@ class SACXAgent():
         self.entropy_temperatures = self.init_temperatures(a_lr, alpha, load_from)
 
         self.replay_buffer = BasicBuffer(buffer_maxlen)
+
+        # SAC-X
+        self.scheduler = Scheduler(temperature=1, tasks=tasks, schedule_period=schedule_period)
 
     def init_p_models(self, load_path, share_layer):
         policy_nets = []
@@ -164,16 +168,18 @@ class SACXAgent():
         episode_rewards = []
 
         for episode in range(self.max_episodes):
-            task = -1
+            task = 0
             state = self.env.reset()
             episode_reward = 0
             scheduled_tasks = []
             scheduled_task_step = 0
-            for step in range(self.max_steps):
+            trajectory = []
 
+            for step in range(self.max_steps):
                 if (step-scheduled_task_step) % self.schedule_period == 0:
                     if episode<15:
-                        task = self.schedule_task()
+                        #task = self.schedule_task()
+                        task = self.scheduler.sample(task)
                     else:
                         task = self.schedule_task_oracle(task)
 
@@ -184,6 +190,7 @@ class SACXAgent():
                 action = self.get_action(state, task) # Sample new action using the task policy network
                 next_state, reward, done, visited_circles = self.env.step(action)
                 self.replay_buffer.push(state, action, reward, next_state, done)
+                trajectory.append((state, action, reward, next_state, done))
                 episode_reward += reward[task]
 
                 if len(self.replay_buffer) > self.training_batch_size:
@@ -208,6 +215,7 @@ class SACXAgent():
                         scheduled_task_step = step
                         print("Switching to ", self.tasks[task])
 
+            self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks)
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
@@ -333,7 +341,7 @@ class SACXAgent():
             torch.save(q_opt, self.store_path.format('q2_optimizer', i))
 
     def schedule_task(self):
-        return random.choice([i for i in range(len(self.tasks))])
+        return random.choice([i for i in range(len(self.tasks)-1)])
 
     def schedule_task_oracle(self, last_task=-1):
         return (last_task + 1) % 3
