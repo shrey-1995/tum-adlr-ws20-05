@@ -73,6 +73,7 @@ class SimpleEnvClean(gym.Env):
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
         self.visit_next = 0
+        self.visit_sequence = np.zeros(3)
 
         # Action defined as acceleration in both axis
         self.action_space = spaces.Box(
@@ -199,7 +200,6 @@ class SimpleEnvClean(gym.Env):
         step_reward = np.zeros(4)
         done = False
         visit = np.zeros(3)
-        visit_sequence = np.zeros(3)
 
         if action is not None:  # First step without action, called from reset()
             # We discount reward for not reaching objectives
@@ -229,11 +229,11 @@ class SimpleEnvClean(gym.Env):
 
                 if intersection == self.visit_next:
                     # Preempt task on reaching the circle
-                    visit_sequence[intersection]=1
+                    self.visit_sequence[intersection]=1
                     self.reward += VISITING_CIRCLE_REWARD
                     step_reward[3] = VISITING_CIRCLE_REWARD
                     self.visit_next+=1
-                    if np.sum(visit_sequence) == len(visit_sequence):
+                    if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True
                         step_reward[3] = FINISHING_REWARD
                         print("Done with reward: ", self.reward)
@@ -248,8 +248,8 @@ class SimpleEnvClean(gym.Env):
                     self.reward-=300
                     step_reward[3] = -300
 
-                    for i in range(len(self.visited)):
-                        visit_sequence[i] = 0
+                    for i in range(len(self.visit_sequence)):
+                        self.visit_sequence[i] = 0
 
                     if intersection==0:
                         self.reward+=VISITING_CIRCLE_REWARD

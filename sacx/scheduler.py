@@ -36,7 +36,10 @@ class Scheduler:
         for a, p in dist.items():
             cumulative_p += p
             if cumulative_p > choice:
-                return self.auxiliary_tasks.index(a)
+                task = self.auxiliary_tasks.index(a)
+                if task is None:
+                    print('Stop here')
+                return task
 
     def train_scheduler(self, trajectories, scheduled_tasks):
         xi = self.schedule_period
