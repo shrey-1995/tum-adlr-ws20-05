@@ -313,6 +313,7 @@ class SACXAgent():
                     break
 
                 state = next_state
+            print("Finished with reward: ", episode_reward)
 
         return episode_rewards
 
