@@ -184,7 +184,7 @@ class SACXAgent():
                         #task = self.schedule_task_oracle(task)
                         task = self.scheduler.sample(scheduled_tasks)
 
-                    scheduled_tasks.append(task)
+                    scheduled_tasks.append(self.tasks[task])
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
 
@@ -213,7 +213,7 @@ class SACXAgent():
                         else:
                             #task = self.schedule_task_oracle(task)
                             task = self.scheduler.sample(scheduled_tasks)
-                        scheduled_tasks.append(task)
+                        scheduled_tasks.append(self.tasks[task])
                         scheduled_task_step = step
                         print("Switching to ", self.tasks[task])
 
