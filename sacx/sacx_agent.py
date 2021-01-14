@@ -208,7 +208,7 @@ class SACXAgent():
                         scheduled_task_step = step
                         print("Switching to ", self.tasks[task])
 
-            if self.learn_scheduler is True:
+            if self.learn_scheduler is True and episode+1>7:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks)
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=100)
             if (episode+1) % self.storing_frequence == 0:
@@ -222,7 +222,7 @@ class SACXAgent():
                 for i in range(len(self.tasks)-1):
                     self.update_task(batch_size, i)
             if main is True:
-                self.update_task(batch_size, len(self.tasks))
+                self.update_task(batch_size, len(self.tasks)-1)
 
     def update_task(self, batch_size, index):
         i = index
