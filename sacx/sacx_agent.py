@@ -179,10 +179,10 @@ class SACXAgent():
                 if (step-scheduled_task_step) % self.schedule_period == 0:
                     if episode<15:
                         #task = self.schedule_task()
-                        task = self.scheduler.sample(task)
+                        task = self.scheduler.sample(scheduled_tasks)
                     else:
                         #task = self.schedule_task_oracle(task)
-                        task = self.scheduler.sample(task)
+                        task = self.scheduler.sample(scheduled_tasks)
 
                     scheduled_tasks.append(task)
                     scheduled_task_step = step
@@ -209,10 +209,10 @@ class SACXAgent():
                 if task<3:
                     if visited_circles[task] == 1:
                         if episode < 15:
-                            task = self.scheduler.sample(task)
+                            task = self.scheduler.sample(scheduled_tasks)
                         else:
                             #task = self.schedule_task_oracle(task)
-                            task = self.scheduler.sample(task)
+                            task = self.scheduler.sample(scheduled_tasks)
                         scheduled_tasks.append(task)
                         scheduled_task_step = step
                         print("Switching to ", self.tasks[task])
