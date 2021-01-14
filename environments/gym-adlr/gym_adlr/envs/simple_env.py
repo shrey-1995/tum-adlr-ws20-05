@@ -249,7 +249,7 @@ class SimpleEnvClean(gym.Env):
                     step_reward[3] = -300
 
                     for i in range(len(self.visited)):
-                        visit_sequence[intersection] = 0
+                        visit_sequence[i] = 0
 
                     if intersection==0:
                         self.reward+=VISITING_CIRCLE_REWARD

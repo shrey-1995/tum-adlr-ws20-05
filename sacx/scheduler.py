@@ -26,6 +26,7 @@ class Scheduler:
         return {a: v/total for a, v in dist.items()}
 
     def sample(self, state):
+        state = tuple(state)
         dist = self.distribution(state)
 
         print(dist)
