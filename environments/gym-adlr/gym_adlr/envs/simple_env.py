@@ -286,6 +286,7 @@ class SimpleEnvClean(gym.Env):
 
         # Define sequence in which circles should be visited
         self.sequence = [k for k in self.circles.keys()]
+        self.visit_sequence = np.zeros(3)
 
         # Set initial position for the agent
         self.init_position = INIT_POS
