@@ -168,7 +168,7 @@ class SACXAgent():
         episode_rewards = []
 
         for episode in range(self.max_episodes):
-            task = 0
+            task = -1
             state = self.env.reset()
             episode_reward = 0
             scheduled_tasks = []
@@ -181,7 +181,8 @@ class SACXAgent():
                         #task = self.schedule_task()
                         task = self.scheduler.sample(task)
                     else:
-                        task = self.schedule_task_oracle(task)
+                        #task = self.schedule_task_oracle(task)
+                        task = self.scheduler.sample(task)
 
                     scheduled_tasks.append(task)
                     scheduled_task_step = step
@@ -208,9 +209,10 @@ class SACXAgent():
                 if task<3:
                     if visited_circles[task] == 1:
                         if episode < 15:
-                            task = self.schedule_task()
+                            task = self.scheduler.sample(task)
                         else:
-                            task = self.schedule_task_oracle(task)
+                            #task = self.schedule_task_oracle(task)
+                            task = self.scheduler.sample(task)
                         scheduled_tasks.append(task)
                         scheduled_task_step = step
                         print("Switching to ", self.tasks[task])
