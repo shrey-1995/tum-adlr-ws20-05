@@ -23,7 +23,11 @@ class Scheduler:
             exp_v = np.exp(v/self.temperature) # Temperature by default is 1
             total += exp_v
             dist[a] = exp_v
-        return {a: v/total for a, v in dist.items()}
+
+        if total==0:
+            return {a: 1/len(self.auxiliary_tasks) for a, v in dist.items()}
+        else:
+            return {a: v/total for a, v in dist.items()}
 
     def sample(self, state):
         state = tuple(state)

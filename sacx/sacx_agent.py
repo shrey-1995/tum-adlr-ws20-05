@@ -177,6 +177,8 @@ class SACXAgent():
             for step in range(self.max_steps):
                 if (step-scheduled_task_step) % self.schedule_period == 0:
                     task = self.scheduler.sample(scheduled_tasks)
+                    if task is None:
+                        self.scheduler.sample(scheduled_tasks)
                     scheduled_tasks.append(self.tasks[task])
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
