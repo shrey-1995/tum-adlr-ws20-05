@@ -202,7 +202,7 @@ class SACXAgent():
 
                 #Schedule new task
                 if task<3:
-                    if visited_circles[task] == 1:
+                    if visited_circles[task] == 1 and step>scheduled_task_step+10:
                         task = self.schedule_task(scheduled_tasks, self.learn_scheduler)
                         scheduled_tasks.append(self.tasks[task])
                         scheduled_task_step = step
