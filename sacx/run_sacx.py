@@ -3,7 +3,7 @@ from environments.mountaincar_cont import MountainCar as MountainCarCont
 
 
 def main():
-    env = MountainCarCont(render=True)
+    env = MountainCarCont(render=False)
     tasks = env.get_tasks()
 
     # SAC Params
@@ -13,11 +13,11 @@ def main():
     a_lr = 3e-4
     q_lr = 3e-4
     p_lr = 3e-4
-    max_episodes = 30
+    max_episodes = 500
     max_steps = 1000
     buffer_maxlen = int(max_steps*(max_episodes/2))
-    training_batch_size = 64
-    schedule_period = 200
+    training_batch_size = 128
+    schedule_period = 250
     learn_scheduler = True
 
     agent = SACXAgent(env=env,
