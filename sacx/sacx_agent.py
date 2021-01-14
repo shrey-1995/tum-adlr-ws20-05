@@ -191,7 +191,7 @@ class SACXAgent():
 
                 if len(self.replay_buffer) > self.training_batch_size:
                     #print("Training")
-                    self.update(self.training_batch_size, main=False, epochs=1)
+                    self.update(self.training_batch_size, auxiliary=True, main=False, epochs=1)
 
                 if done or step == self.max_steps - 1:
                     episode_rewards.append(episode_reward)
@@ -210,81 +210,88 @@ class SACXAgent():
 
             if self.learn_scheduler is True:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks)
-            self.update(self.training_batch_size, main=True, epochs=100)
+            self.update(self.training_batch_size, auxiliary=False, main=True, epochs=100)
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
         return episode_rewards
 
-    def update(self, batch_size, main=False, epochs=1):
-        update_range = len(self.tasks) if main is True else len(self.tasks)-1
-
+    def update(self, batch_size, auxiliary=True, main=False, epochs=1):
         for e in range(epochs):
-            for i in range(update_range):
-                states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size)
-                states = torch.FloatTensor(states).to(self.device)
-                actions = torch.FloatTensor(actions).to(self.device)
-                rewards = torch.FloatTensor(rewards).to(self.device)
-                rewards = rewards.reshape(batch_size, rewards.shape[-1]) # Reshape
-                rewards = rewards[:, i:i+1] # Select only rewards for this task
-                next_states = torch.FloatTensor(next_states).to(self.device)
-                dones = torch.FloatTensor(dones).to(self.device)
-                dones = dones.view(dones.size(0), -1)
+            if auxiliary is True:
+                for i in range(len(self.tasks)-1):
+                    self.update_task(batch_size, i)
+            if main is True:
+                self.update_task(batch_size, len(self.tasks))
 
-                next_actions, next_log_pi = self.p_nets[i].sample(next_states)
-                next_q1 = self.target_q_nets1[i](next_states, next_actions)
-                next_q2 = self.target_q_nets2[i](next_states, next_actions)
-                alpha = self.entropy_temperatures[i][0]
-                next_q_target = torch.min(next_q1, next_q2) - alpha * next_log_pi
-                expected_q = rewards + (1 - dones) * self.gamma * next_q_target
+    def update_task(self, batch_size, index):
+        i = index
+        states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size)
+        states = torch.FloatTensor(states).to(self.device)
+        actions = torch.FloatTensor(actions).to(self.device)
+        rewards = torch.FloatTensor(rewards).to(self.device)
+        rewards = rewards.reshape(batch_size, rewards.shape[-1])  # Reshape
+        rewards = rewards[:, i:i + 1]  # Select only rewards for this task
+        next_states = torch.FloatTensor(next_states).to(self.device)
+        dones = torch.FloatTensor(dones).to(self.device)
+        dones = dones.view(dones.size(0), -1)
 
-                # q loss
-                curr_q1 = self.q_nets1[i].forward(states, actions)
-                curr_q2 = self.q_nets2[i].forward(states, actions)
-                q1_loss = F.mse_loss(curr_q1, expected_q.detach())
-                q2_loss = F.mse_loss(curr_q2, expected_q.detach())
+        next_actions, next_log_pi = self.p_nets[i].sample(next_states)
+        next_q1 = self.target_q_nets1[i](next_states, next_actions)
+        next_q2 = self.target_q_nets2[i](next_states, next_actions)
+        alpha = self.entropy_temperatures[i][0]
+        next_q_target = torch.min(next_q1, next_q2) - alpha * next_log_pi
+        expected_q = rewards + (1 - dones) * self.gamma * next_q_target
 
-                # update q networks
-                self.q1_optimizers[i].zero_grad()
-                q1_loss.backward()
-                self.q1_optimizers[i].step()
+        # q loss
+        curr_q1 = self.q_nets1[i].forward(states, actions)
+        curr_q2 = self.q_nets2[i].forward(states, actions)
+        q1_loss = F.mse_loss(curr_q1, expected_q.detach())
+        q2_loss = F.mse_loss(curr_q2, expected_q.detach())
 
-                self.q2_optimizers[i].zero_grad()
-                q2_loss.backward()
-                self.q2_optimizers[i].step()
+        # update q networks
+        self.q1_optimizers[i].zero_grad()
+        q1_loss.backward()
+        self.q1_optimizers[i].step()
 
-                # delayed update for policy network and target q networks
-                new_actions, log_pi = self.p_nets[i].sample(states)
-                if self.update_step % self.delay_step == 0:
-                    min_q = torch.min(
-                        self.q_nets1[i].forward(states, new_actions),
-                        self.q_nets2[i].forward(states, new_actions)
-                    )
-                    policy_loss = (self.entropy_temperatures[i][0] * log_pi - min_q).mean()
+        self.q2_optimizers[i].zero_grad()
+        q2_loss.backward()
+        self.q2_optimizers[i].step()
 
-                    self.policy_optimizers[i].zero_grad()
-                    policy_loss.backward()
-                    self.policy_optimizers[i].step()
+        # delayed update for policy network and target q networks
+        new_actions, log_pi = self.p_nets[i].sample(states)
+        if self.update_step % self.delay_step == 0:
+            min_q = torch.min(
+                self.q_nets1[i].forward(states, new_actions),
+                self.q_nets2[i].forward(states, new_actions)
+            )
+            policy_loss = (self.entropy_temperatures[i][0] * log_pi - min_q).mean()
 
-                    # target networks
-                    for target_param, param in zip(self.target_q_nets1[i].parameters(), self.q_nets1[i].parameters()):
-                        target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
+            self.policy_optimizers[i].zero_grad()
+            policy_loss.backward()
+            self.policy_optimizers[i].step()
 
-                    for target_param, param in zip(self.target_q_nets2[i].parameters(), self.q_nets2[i].parameters()):
-                        target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
+            # target networks
+            for target_param, param in zip(self.target_q_nets1[i].parameters(), self.q_nets1[i].parameters()):
+                target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
 
-                # update temperature. Recall info is stored as (alpha, target_entropy, log_alpha, alpha_optim)
-                log_alpha = self.entropy_temperatures[i][2]
-                target_entropy = self.entropy_temperatures[i][1]
-                alpha_loss = (log_alpha * (-log_pi - target_entropy).detach()).mean()
+            for target_param, param in zip(self.target_q_nets2[i].parameters(), self.q_nets2[i].parameters()):
+                target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
 
-                self.entropy_temperatures[i][3].zero_grad() # Alpha optim
-                alpha_loss.backward()
-                self.entropy_temperatures[i][3].step()
+        # update temperature. Recall info is stored as (alpha, target_entropy, log_alpha, alpha_optim)
+        log_alpha = self.entropy_temperatures[i][2]
+        target_entropy = self.entropy_temperatures[i][1]
+        alpha_loss = (log_alpha * (-log_pi - target_entropy).detach()).mean()
 
-                self.entropy_temperatures[i] = (log_alpha.exp(), self.entropy_temperatures[i][1], self.entropy_temperatures[i][2], self.entropy_temperatures[i][3])
+        self.entropy_temperatures[i][3].zero_grad()  # Alpha optim
+        alpha_loss.backward()
+        self.entropy_temperatures[i][3].step()
 
-            self.update_step += 1
+        self.entropy_temperatures[i] = (
+            log_alpha.exp(), self.entropy_temperatures[i][1], self.entropy_temperatures[i][2],
+            self.entropy_temperatures[i][3])
+
+        self.update_step += 1
 
     def test(self, num_episodes=3):
         episode_rewards = []
