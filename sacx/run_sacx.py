@@ -15,9 +15,10 @@ def main():
     p_lr = 3e-4
     max_episodes = 30
     max_steps = 1000
-    buffer_maxlen = max_steps*(max_episodes/2)
+    buffer_maxlen = int(max_steps*(max_episodes/2))
     training_batch_size = 64
     schedule_period = 200
+    learn_scheduler = True
 
     agent = SACXAgent(env=env,
                       gamma=gamma,
@@ -34,6 +35,7 @@ def main():
                       schedule_period=schedule_period,
                       storing_frequence=10,
                       share_layers=False,
+                      learn_scheduler=learn_scheduler,
                       store_path="./checkpoints/simple_env/sparse_{}_{}.checkpoint",
                       load_from=None)
 
