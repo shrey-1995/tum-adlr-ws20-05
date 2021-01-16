@@ -8,6 +8,7 @@ from shapely.geometry import LineString
 from shapely.geometry import Point
 from gym_adlr.components.simple_agent import SimpleAgent
 import math
+from copy import copy
 
 STATE_W = 96
 STATE_H = 96
@@ -90,8 +91,8 @@ class SimpleEnvClean(gym.Env):
         #                   s[2+N_CIRCLES:2+N_CIRCLES*2] Y coordinates for each circle
         #                   s[2+N_CIRCLES*2:2+N_CIRCLES*2+N_CIRCLES] boolean determining if circles were visited
 
-        lower_bound_obs_space = np.array([0, 0] + [0] * N_CIRCLES * 2 + [0] * N_CIRCLES)
-        upper_bound_obs_space = np.array([WINDOW_W, WINDOW_H] + [WINDOW_W] * 2 * N_CIRCLES + [1] * N_CIRCLES)
+        lower_bound_obs_space = np.array([0, 0] + [0] * N_CIRCLES * 2 + [0] * N_CIRCLES + [0] * N_CIRCLES)
+        upper_bound_obs_space = np.array([WINDOW_W, WINDOW_H] + [WINDOW_W] * 2 * N_CIRCLES + [1] * N_CIRCLES + [1] * N_CIRCLES)
 
         self.observation_space = spaces.Box(
             lower_bound_obs_space, upper_bound_obs_space, dtype=np.float32
@@ -187,6 +188,10 @@ class SimpleEnvClean(gym.Env):
         Performs a step in our world
 
         """
+        # Update visited array
+        self.visited = copy(self.visit_sequence)
+        current_visit = np.zeros(3)
+
         # Store previous position to compute trajectory
         x_prev, y_prev = self.agent.get_position()
 
@@ -226,12 +231,13 @@ class SimpleEnvClean(gym.Env):
                 step_reward[intersection] += VISITING_CIRCLE_REWARD
                 self.visited[intersection] = 1
                 visit[intersection] = 1
+                current_visit[intersection] = 1
 
                 if intersection == self.visit_next:
                     # Preempt task on reaching the circle
                     self.visit_sequence[intersection]=1
                     self.reward += VISITING_CIRCLE_REWARD
-                    step_reward[3] = VISITING_CIRCLE_REWARD
+                    step_reward[3] = VISITING_CIRCLE_REWARD*(intersection+1)
                     self.visit_next+=1
                     if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True
@@ -254,10 +260,11 @@ class SimpleEnvClean(gym.Env):
                     if intersection==0:
                         self.reward+=VISITING_CIRCLE_REWARD
                         self.visited[0] = 1
+                        self.visit_sequence[0] = 1
                         step_reward += VISITING_CIRCLE_REWARD
 
         # Update obsetvation space
-        state = [x, y] + self.circles_positions + list(self.visited)
+        state = [x, y] + self.circles_positions + list(self.visited) + list(current_visit)
 
         self.observation_space = np.array(state, dtype=np.float32)
 

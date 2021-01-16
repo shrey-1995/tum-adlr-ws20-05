@@ -210,7 +210,9 @@ class SACXAgent():
 
             if self.learn_scheduler is True and episode+1>7:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks)
+
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=100)
+
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
