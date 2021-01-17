@@ -113,7 +113,7 @@ class SimpleEnvClean(gym.Env):
                     return False
             return True
 
-    def _generate_random_circles(self, n_circles=3, clearance=100):
+    def _generate_random_circles(self, n_circles=3, clearance=40):
         """
         Function to generate n circles for our environment
         :param clearance: clearance from the screen edges
@@ -125,9 +125,12 @@ class SimpleEnvClean(gym.Env):
         done = 0
 
         while done < n_circles:
-            circle = [self._get_random_position(clearance=clearance), random.randint(15, 40),
-                      (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1))]
-            if self._is_circle_valid(circle):
+            color = [0,0,0]
+            color[done] = 1
+            color = tuple(color)
+            pos = self._get_random_position(clearance=clearance)
+            circle = [pos, random.randint(15, 40), color]
+            if self._is_circle_valid(circle) is True:
                 self.circles[done] = circle
                 self.circles_shapely[done] = Point(*circle[0]) # Include this to consider radius: .buffer(circle[1])
                 self.positions.append(circle[0][0])
@@ -162,6 +165,7 @@ class SimpleEnvClean(gym.Env):
         :param clearance: minimum distance to the border
         :return: tuple
         """
+        random.seed(a=None)
         return random.randint(clearance, self.xmax - clearance), random.randint(clearance, self.ymax - clearance)
 
     def _seed(self, seed=None):
@@ -188,8 +192,6 @@ class SimpleEnvClean(gym.Env):
         Performs a step in our world
 
         """
-        # Update visited array
-        self.visited = copy(self.visit_sequence)
         current_visit = np.zeros(3)
 
         # Store previous position to compute trajectory
@@ -229,13 +231,13 @@ class SimpleEnvClean(gym.Env):
 
             if intersection is not None:
                 step_reward[intersection] += VISITING_CIRCLE_REWARD
-                self.visited[intersection] = 1
                 visit[intersection] = 1
                 current_visit[intersection] = 1
 
                 if intersection == self.visit_next:
                     # Preempt task on reaching the circle
                     self.visit_sequence[intersection]=1
+                    self.visited[intersection] = 1
                     self.reward += VISITING_CIRCLE_REWARD
                     step_reward[3] = VISITING_CIRCLE_REWARD*(intersection+1)
                     self.visit_next+=1
@@ -256,8 +258,10 @@ class SimpleEnvClean(gym.Env):
 
                     for i in range(len(self.visit_sequence)):
                         self.visit_sequence[i] = 0
+                        self.visited[i] = 0
 
                     if intersection==0:
+                        self.visit_next += 1
                         self.reward+=VISITING_CIRCLE_REWARD
                         self.visited[0] = 1
                         self.visit_sequence[0] = 1
@@ -309,11 +313,16 @@ class SimpleEnvClean(gym.Env):
         # Create car
         self.agent = SimpleAgent(*self.init_position, self.xmax, self.ymax)
 
+        """if self.viewer:
+            self.viewer.close()
+            self.viewer = None
+            """
+
         self.render()
 
         return self.step(None)[0]
 
-    def render(self, mode='human'):
+    def render(self, mode='human', reset_circles=False):
         """
         Renders the environment to the screen.
         """

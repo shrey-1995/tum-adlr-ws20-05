@@ -45,12 +45,18 @@ class Scheduler:
                     print('Stop here')
                 return task
 
-    def train_scheduler(self, trajectories, scheduled_tasks):
-        xi = self.schedule_period
+    def train_scheduler(self, trajectories, scheduled_tasks, scheduled_tasks_steps):
         main_rewards = [r[-1] for _, _, r, _, _ in trajectories]
+        tasks_rewards = np.zeros(len(main_rewards))
+        for i in scheduled_tasks_steps:
+            tasks_rewards[i] = main_rewards[i]
+
         for h in range(len(scheduled_tasks)):
-            R = sum([r * self.gamma**k for k, r in enumerate(main_rewards[h*xi:])])
+            init_step = scheduled_tasks_steps[h]
+            final_step = scheduled_tasks_steps[min(h+1, len(scheduled_tasks_steps)-1)]
+
+            R = sum([r * self.gamma**k for k, r in enumerate(tasks_rewards[init_step+1:final_step+1])]) # Reward for sampling this task
 
             # We used a Q-Table with 0.1 learning rate to update the values in the table.
             # Change 0.1 to the desired learning rate
-            self.q_table[tuple(scheduled_tasks[:h]), scheduled_tasks[h]] += 0.1 * (R - self.q_table[tuple(scheduled_tasks[:h]), scheduled_tasks[h]])
+            self.q_table[tuple(scheduled_tasks[max(0, h-2):h]), scheduled_tasks[h]] += 0.1 * (R - self.q_table[tuple(scheduled_tasks[max(0, h-2):h]), scheduled_tasks[h]])

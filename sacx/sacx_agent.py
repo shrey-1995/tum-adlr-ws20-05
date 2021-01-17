@@ -168,17 +168,24 @@ class SACXAgent():
 
     def train(self):
         episode_rewards = []
+        task = None
 
         for episode in range(self.max_episodes):
+            if episode == 100:
+                print('Stop for testing here')
             state = self.env.reset()
             episode_reward = 0
             scheduled_tasks = []
+            scheduled_tasks_steps = []
             scheduled_task_step = 0
             trajectory = []
 
             for step in range(self.max_steps):
                 if (step-scheduled_task_step) % self.schedule_period == 0:
-                    task = self.schedule_task(scheduled_tasks, self.learn_scheduler)
+                    prev_task = task
+                    while task == prev_task:
+                        task = self.schedule_task(scheduled_tasks, self.learn_scheduler)
+                    scheduled_tasks_steps.append(step)
                     scheduled_tasks.append(self.tasks[task])
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
@@ -198,20 +205,23 @@ class SACXAgent():
                     print("Episode " + str(episode) + ": " + str(episode_reward))
                     break
 
-                state = next_state
-
-                #Schedule new task
-                if task<3:
-                    if visited_circles[task] == 1 and step>scheduled_task_step+10:
-                        task = self.schedule_task(scheduled_tasks, self.learn_scheduler)
+                # Schedule new task
+                if task < 3:
+                    if visited_circles[task] == 1:
+                        prev_task = task
+                        while task==prev_task:
+                            task = self.schedule_task(scheduled_tasks, self.learn_scheduler)
                         scheduled_tasks.append(self.tasks[task])
+                        scheduled_tasks_steps.append(step)
                         scheduled_task_step = step
                         print("Switching to ", self.tasks[task])
 
-            if self.learn_scheduler is True and episode+1>7:
-                self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks)
+                state = next_state
 
-            self.update(self.training_batch_size, auxiliary=False, main=True, epochs=100)
+            if self.learn_scheduler is True and episode+1>5:
+                self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks, scheduled_tasks_steps=scheduled_tasks_steps)
+
+            self.update(self.training_batch_size, auxiliary=False, main=True, epochs=1000)
 
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
@@ -302,7 +312,7 @@ class SACXAgent():
             print("Testing episode {}\n".format(episode))
             state = self.env.reset()
             episode_reward = 0
-            for step in range(500):
+            for step in range(self.max_steps):
                 action = self.get_action(state, 3)  # Sample new action using the main task policy network
                 next_state, reward, done, visited_circles = self.env.step(action)
                 episode_reward += reward[3]

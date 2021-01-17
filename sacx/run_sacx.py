@@ -13,11 +13,11 @@ def main():
     a_lr = 1e-4
     q_lr = 1e-4
     p_lr = 1e-4
-    max_episodes = 250
+    max_episodes = 200
     max_steps = 1000
-    buffer_maxlen = int(max_steps*(max_episodes/2))
+    buffer_maxlen = 300000
     training_batch_size = 64
-    schedule_period = 250
+    schedule_period = 200
     learn_scheduler = True
 
     agent = SACXAgent(env=env,
