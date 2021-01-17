@@ -183,8 +183,13 @@ class SACXAgent():
             for step in range(self.max_steps):
                 if (step-scheduled_task_step) % self.schedule_period == 0:
                     prev_task = task
+                    t = 0
                     while task == prev_task:
-                        task = self.schedule_task(scheduled_tasks, self.learn_scheduler)
+                        t+=1
+                        task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler)
+                        if t > 10:  # Avoid the scheduler selecting same task forever
+                            task = self.schedule_task(scheduled_tasks, learn_scheduler=False)
+                            break
                     scheduled_tasks_steps.append(step)
                     scheduled_tasks.append(self.tasks[task])
                     scheduled_task_step = step
@@ -209,8 +214,13 @@ class SACXAgent():
                 if task < 3:
                     if visited_circles[task] == 1:
                         prev_task = task
+                        t = 0
                         while task==prev_task:
-                            task = self.schedule_task(scheduled_tasks, self.learn_scheduler)
+                            t+=1
+                            task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler)
+                            if t>10: # Avoid the scheduler selecting same task forever
+                                task = self.schedule_task(scheduled_tasks, learn_scheduler=False)
+                                break
                         scheduled_tasks.append(self.tasks[task])
                         scheduled_tasks_steps.append(step)
                         scheduled_task_step = step
@@ -218,7 +228,7 @@ class SACXAgent():
 
                 state = next_state
 
-            if self.learn_scheduler is True and episode+1>5:
+            if self.learn_scheduler is True and episode+1>7:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks, scheduled_tasks_steps=scheduled_tasks_steps)
 
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=1000)

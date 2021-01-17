@@ -59,4 +59,4 @@ class Scheduler:
 
             # We used a Q-Table with 0.1 learning rate to update the values in the table.
             # Change 0.1 to the desired learning rate
-            self.q_table[tuple(scheduled_tasks[max(0, h-2):h]), scheduled_tasks[h]] += 0.1 * (R - self.q_table[tuple(scheduled_tasks[max(0, h-2):h]), scheduled_tasks[h]])
+            self.q_table[tuple(scheduled_tasks[max(0, h-2):h]), scheduled_tasks[h]] += 0.003 * (R - self.q_table[tuple(scheduled_tasks[max(0, h-2):h]), scheduled_tasks[h]])
