@@ -99,3 +99,14 @@ class PolicyNetwork(nn.Module):
         log_pi = log_pi.sum(1, keepdim=True)
 
         return action, log_pi
+
+    def get_probability(self, state, z):
+        mean, log_std = self.forward(state)
+        std = log_std.exp()
+
+        normal = Normal(mean, std)
+        prob = normal.log_prob(z)
+
+        prob = torch.exp(prob.sum(1, keepdim=True))
+        return prob
+

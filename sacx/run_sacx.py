@@ -18,7 +18,7 @@ def main():
     buffer_maxlen = 300000
     training_batch_size = 64
     schedule_period = 200
-    learn_scheduler = True
+    learn_scheduler = False
 
     agent = SACXAgent(env=env,
                       gamma=gamma,

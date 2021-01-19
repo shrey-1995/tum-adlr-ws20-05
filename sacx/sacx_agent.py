@@ -7,7 +7,7 @@ import pickle
 import torch.nn as nn
 import numpy as np
 from sacx.scheduler import Scheduler
-
+from collections import deque
 from common.models import SoftQNetwork, PolicyNetwork
 from common.buffer import BasicBuffer
 
@@ -61,7 +61,7 @@ class SACXAgent():
         self.entropy_temperatures = self.init_temperatures(a_lr, alpha, load_from)
 
         self.replay_buffer = BasicBuffer(buffer_maxlen)
-
+        self.main_replay_buffer = deque(maxlen=3000)
         # SAC-X
         self.scheduler = Scheduler(temperature=1, tasks=tasks, schedule_period=schedule_period)
 
@@ -163,8 +163,20 @@ class SACXAgent():
         z = normal.sample()
         action = torch.tanh(z)
         action = action.cpu().detach().squeeze(0).numpy()
+        return z, self.rescale_action(action)
 
-        return self.rescale_action(action)
+    def get_probability(self, state, task, z):
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        mean, log_std = self.p_nets[task](state)
+        std = log_std.exp()
+
+        normal = Normal(mean, std)
+        prob = normal.log_prob(z)
+
+
+        prob = torch.exp(prob.sum(1, keepdim=True))
+        prob = prob.cpu().detach().squeeze(0).numpy()
+        return prob
 
     def train(self):
         episode_rewards = []
@@ -179,7 +191,6 @@ class SACXAgent():
             scheduled_tasks_steps = []
             scheduled_task_step = 0
             trajectory = []
-
             for step in range(self.max_steps):
                 if (step-scheduled_task_step) % self.schedule_period == 0:
                     prev_task = task
@@ -195,17 +206,18 @@ class SACXAgent():
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
 
-                action = self.get_action(state, task) # Sample new action using the task policy network
+                z, action = self.get_action(state, task) # Sample new action using the task policy network
                 next_state, reward, done, visited_circles = self.env.step(action)
+                prob = self.get_probability(state, 3, z)
                 self.replay_buffer.push(state, action, reward, next_state, done)
-                trajectory.append((state, action, reward, next_state, done))
+                trajectory.append((state, action, reward, next_state, done, z, prob))
                 episode_reward += reward[task]
-
                 if len(self.replay_buffer) > self.training_batch_size:
                     #print("Training")
                     self.update(self.training_batch_size, auxiliary=True, main=False, epochs=1)
 
                 if done or step == self.max_steps - 1:
+                    self.main_replay_buffer.append(trajectory)
                     episode_rewards.append(episode_reward)
                     print("Episode " + str(episode) + ": " + str(episode_reward))
                     break
@@ -230,9 +242,9 @@ class SACXAgent():
 
             if self.learn_scheduler is True and episode+1>7:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks, scheduled_tasks_steps=scheduled_tasks_steps)
-
-            self.update(self.training_batch_size, auxiliary=False, main=True, epochs=1000)
-
+            trajectories = self.sample_trajectories()
+            self.update_q_main(trajectories)
+            self.update_p_main(trajectories)
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
@@ -323,7 +335,7 @@ class SACXAgent():
             state = self.env.reset()
             episode_reward = 0
             for step in range(self.max_steps):
-                action = self.get_action(state, 3)  # Sample new action using the main task policy network
+                _, action = self.get_action(state, 3)  # Sample new action using the main task policy network
                 next_state, reward, done, visited_circles = self.env.step(action)
                 episode_reward += reward[3]
 
@@ -380,3 +392,76 @@ class SACXAgent():
             f.write("{}\n".format(scheduler_period))
             for item in episode_rewards:
                 f.write("{}\n".format(item))
+
+    def sample_trajectories(self, training_sequence_len=20):
+        """
+        Samples trajectories from the replay memory
+        :return: A minibatch (list) of random-length trajectories
+        """
+        minibatch = []
+        for i in range(10):
+            trajectory = self.main_replay_buffer[random.randint(0, len(self.main_replay_buffer) - 1)]
+            initial_step = random.randint(0, len(trajectory) - training_sequence_len)
+            trajectory = trajectory[initial_step:initial_step + training_sequence_len]
+            minibatch.append(trajectory)
+        return minibatch
+
+    def update_q_main(self, trajectories, gamma=0.95):
+        for trajectory in trajectories:
+            num_steps = len(trajectory)
+            states = torch.FloatTensor([step[0] for step in trajectory])
+            rewards = torch.FloatTensor([step[2] for step in trajectory])
+            actions = torch.FloatTensor([step[1] for step in trajectory])
+            z = torch.FloatTensor([step[5].squeeze(0).numpy() for step in trajectory])
+            probs = torch.FloatTensor([step[6] for step in trajectory])
+            # actions (for each task) for every state action pair in trajectory
+            task_actions, _ = self.p_nets[3].sample(states)
+            task_probs = self.p_nets[3].get_probability(states, z)
+            # Q-values (for each task) for every state and task-action pair in trajectory
+            task_q = self.q_nets1[3].forward(states, task_actions)
+            # Q-values (for each task) for every state and action pair in trajectory
+            traj_q = self.target_q_nets1[3].forward(states, actions)
+
+            # Calculation of retrace Q
+            q_ret = torch.zeros_like(task_q.data)
+            for i in range(num_steps):
+                q_ret_i = 0
+                # Importance weights
+                c = 1.0
+                for j in range(i, num_steps):
+                    # Discount factor
+                    discount = gamma ** (j - i)
+                    cj = min(abs(task_probs.data[j] / float(probs.data[j])), 1.0)
+                    c *= cj
+                    # Difference between the two q values
+                    del_q = task_q.data[i] - traj_q[j]
+                    # Retrace Q value is sum of discounted weighted rewards
+                    q_ret_i += discount * c * (rewards[j, 3] + del_q)
+                # Append retrace Q value to float tensor using index_fill
+                q_ret.index_fill_(0, torch.LongTensor([i]), q_ret_i[0])
+            # Critic loss uses retrace Q
+            critic_loss = F.mse_loss(task_q, q_ret.detach())
+            # Use Huber Loss for critic
+            #critic_loss = torch.nn.SmoothL1Loss()(task_q, torch.autograd.Variable(q_ret, requires_grad=False))
+            self.q1_optimizers[3].zero_grad()
+            critic_loss.backward()
+            self.q1_optimizers[3].step()
+            # target networks
+            for target_param, param in zip(self.target_q_nets1[3].parameters(), self.q_nets1[3].parameters()):
+                target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
+
+    def update_p_main(self, trajectories, gamma=0.95):
+        for trajectory in trajectories:
+            # Extract information out of trajectory
+            # state, action, reward, next_state, done, z, prob)
+            num_steps = len(trajectory)
+            states = torch.FloatTensor([step[0] for step in trajectory])
+            # actions (for each task) for every state action pair in trajectory
+            task_actions, task_log_prob = self.p_nets[3].sample(states)
+            # Q-values (for each task) for every state and task-action pair in trajectory
+            task_q = self.q_nets1[3].forward(states, task_actions)
+            # delayed update for policy network and target q networks
+            policy_loss = (self.entropy_temperatures[3][0] * task_log_prob - task_q).mean()
+            self.policy_optimizers[3].zero_grad()
+            policy_loss.backward()
+            self.policy_optimizers[3].step()
