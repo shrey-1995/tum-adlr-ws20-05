@@ -250,6 +250,10 @@ class SACXAgent():
             trajectories = self.sample_trajectories()
             self.update_q_main(trajectories)
             self.update_p_main(trajectories)
+            if episode % 10 == 0:
+                test_rewards = self.test(1)
+                if test_rewards[0] > 0:
+                    print('Something good happened')
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
@@ -389,7 +393,11 @@ class SACXAgent():
         if learn_scheduler is True:
             return self.scheduler.sample(scheduled_tasks)
         else:
-            return random.choice([i for i in range(len(self.tasks)-1)])
+            if len(scheduled_tasks)==0:
+                return 0
+            else:
+                return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
+            #return random.choice([i for i in range(len(self.tasks)
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:
@@ -413,7 +421,7 @@ class SACXAgent():
             if choice < threshold and selective_sampling:
                 non_zero_steps = self.non_zero_main_rewards[j]
                 if len(non_zero_steps) > 0:
-                    initial_step = max(0, non_zero_steps[random.randint(0, len(non_zero_steps))]-training_sequence_len+1)
+                    initial_step = max(0, non_zero_steps[random.randint(0, len(non_zero_steps)-1)]-training_sequence_len+1)
             if initial_step == -1:
                 initial_step = random.randint(0, len(trajectory) - training_sequence_len)
 
