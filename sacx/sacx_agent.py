@@ -47,7 +47,7 @@ class SACXAgent():
         self.schedule_period = schedule_period
         self.learn_scheduler = learn_scheduler
 
-        self.storing_frequence=storing_frequence
+        self.storing_frequence = storing_frequence
         self.store_path = store_path
 
         self.tasks = tasks
@@ -62,6 +62,7 @@ class SACXAgent():
 
         self.replay_buffer = BasicBuffer(buffer_maxlen)
         self.main_replay_buffer = deque(maxlen=3000)
+        self.non_zero_main_rewards = deque(maxlen=3000)
         # SAC-X
         self.scheduler = Scheduler(temperature=1, tasks=tasks, schedule_period=schedule_period)
 
@@ -188,6 +189,7 @@ class SACXAgent():
             state = self.env.reset()
             episode_reward = 0
             scheduled_tasks = []
+            main_reward_list = []
             scheduled_tasks_steps = []
             scheduled_task_step = 0
             trajectory = []
@@ -208,6 +210,8 @@ class SACXAgent():
 
                 z, action = self.get_action(state, task) # Sample new action using the task policy network
                 next_state, reward, done, visited_circles = self.env.step(action)
+                if reward[3]!=0:
+                    main_reward_list.append(step)
                 prob = self.get_probability(state, 3, z)
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 trajectory.append((state, action, reward, next_state, done, z, prob))
@@ -218,6 +222,7 @@ class SACXAgent():
 
                 if done or step == self.max_steps - 1:
                     self.main_replay_buffer.append(trajectory)
+                    self.non_zero_main_rewards.append(main_reward_list)
                     episode_rewards.append(episode_reward)
                     print("Episode " + str(episode) + ": " + str(episode_reward))
                     break
@@ -393,16 +398,26 @@ class SACXAgent():
             for item in episode_rewards:
                 f.write("{}\n".format(item))
 
-    def sample_trajectories(self, training_sequence_len=20):
+    def sample_trajectories(self, training_sequence_len=20, selective_sampling=True):
         """
         Samples trajectories from the replay memory
         :return: A minibatch (list) of random-length trajectories
         """
         minibatch = []
-        for i in range(10):
-            trajectory = self.main_replay_buffer[random.randint(0, len(self.main_replay_buffer) - 1)]
-            initial_step = random.randint(0, len(trajectory) - training_sequence_len)
-            trajectory = trajectory[initial_step:initial_step + training_sequence_len]
+        threshold = 0.2
+        for i in range(20):
+            j = random.randint(0, len(self.main_replay_buffer) - 1)
+            trajectory = self.main_replay_buffer[j]
+            choice = np.random.random()
+            initial_step = -1
+            if choice < threshold and selective_sampling:
+                non_zero_steps = self.non_zero_main_rewards[j]
+                if len(non_zero_steps) > 0:
+                    initial_step = non_zero_steps[max(0, random.randint(0, len(non_zero_steps))-training_sequence_len)]
+            if initial_step == -1:
+                initial_step = random.randint(0, len(trajectory) - training_sequence_len)
+
+            trajectory = trajectory[initial_step : initial_step+training_sequence_len]
             minibatch.append(trajectory)
         return minibatch
 
