@@ -413,7 +413,7 @@ class SACXAgent():
             if choice < threshold and selective_sampling:
                 non_zero_steps = self.non_zero_main_rewards[j]
                 if len(non_zero_steps) > 0:
-                    initial_step = non_zero_steps[max(0, random.randint(0, len(non_zero_steps))-training_sequence_len)]
+                    initial_step = max(0, non_zero_steps[random.randint(0, len(non_zero_steps))]-training_sequence_len+1)
             if initial_step == -1:
                 initial_step = random.randint(0, len(trajectory) - training_sequence_len)
 
