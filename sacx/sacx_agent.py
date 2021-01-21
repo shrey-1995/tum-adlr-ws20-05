@@ -63,6 +63,7 @@ class SACXAgent():
         self.replay_buffer = BasicBuffer(buffer_maxlen)
         self.main_replay_buffer = deque(maxlen=3000)
         self.non_zero_main_rewards = deque(maxlen=3000)
+        self.non_zero_rewards_q = deque(maxlen=3000)
         # SAC-X
         self.scheduler = Scheduler(temperature=1, tasks=tasks, schedule_period=schedule_period)
 
@@ -182,7 +183,6 @@ class SACXAgent():
     def train(self):
         episode_rewards = []
         task = None
-
         for episode in range(self.max_episodes):
             if episode == 100:
                 print('Stop for testing here')
@@ -212,6 +212,7 @@ class SACXAgent():
                 next_state, reward, done, visited_circles = self.env.step(action)
                 if reward[3]!=0:
                     main_reward_list.append(step)
+                    self.non_zero_rewards_q.append((state, action, np.array([reward]), next_state, done))
                 prob = self.get_probability(state, 3, z)
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 trajectory.append((state, action, reward, next_state, done, z, prob))
@@ -270,7 +271,7 @@ class SACXAgent():
 
     def update_task(self, batch_size, index):
         i = index
-        states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size)
+        states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size, index == 3, self.non_zero_rewards_q)
         states = torch.FloatTensor(states).to(self.device)
         actions = torch.FloatTensor(actions).to(self.device)
         rewards = torch.FloatTensor(rewards).to(self.device)
