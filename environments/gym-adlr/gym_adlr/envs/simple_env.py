@@ -239,7 +239,7 @@ class SimpleEnvClean(gym.Env):
                     self.visit_sequence[intersection]=1
                     self.visited[intersection] = 1
                     self.reward += VISITING_CIRCLE_REWARD
-                    #step_reward[3] = VISITING_CIRCLE_REWARD*(intersection+1)
+                    step_reward[3] = VISITING_CIRCLE_REWARD*(intersection+1)
                     self.visit_next+=1
                     if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True
@@ -265,7 +265,7 @@ class SimpleEnvClean(gym.Env):
                         self.reward+=VISITING_CIRCLE_REWARD
                         self.visited[0] = 1
                         self.visit_sequence[0] = 1
-                        #step_reward[3] += VISITING_CIRCLE_REWARD
+                        step_reward[3] += VISITING_CIRCLE_REWARD
 
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited) + list(current_visit)

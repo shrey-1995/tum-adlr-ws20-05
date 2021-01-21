@@ -247,10 +247,11 @@ class SACXAgent():
 
             if self.learn_scheduler is True and episode+1>7:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks, scheduled_tasks_steps=scheduled_tasks_steps)
-            trajectories = self.sample_trajectories()
-            self.update_q_main(trajectories)
-            self.update_p_main(trajectories)
-            if episode % 10 == 0:
+            #trajectories = self.sample_trajectories()
+            #self.update_q_main(trajectories)
+            #self.update_p_main(trajectories)
+            self.update(self.training_batch_size, auxiliary=False, main=True, epochs=350)
+            if episode % 25 == 0:
                 test_rewards = self.test(1)
                 if test_rewards[0] > 0:
                     print('Something good happened')
@@ -412,8 +413,8 @@ class SACXAgent():
         :return: A minibatch (list) of random-length trajectories
         """
         minibatch = []
-        threshold = 0.2
-        for i in range(20):
+        threshold = 0.45
+        for i in range(50):
             j = random.randint(0, len(self.main_replay_buffer) - 1)
             trajectory = self.main_replay_buffer[j]
             choice = np.random.random()
