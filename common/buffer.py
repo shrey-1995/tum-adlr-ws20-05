@@ -12,14 +12,18 @@ class BasicBuffer:
         experience = (state, action, np.array([reward]), next_state, done)
         self.buffer.append(experience)
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, main_task=False, non_zero_reward_steps=None):
         state_batch = []
         action_batch = []
         reward_batch = []
         next_state_batch = []
         done_batch = []
+        batch = []
+        if main_task and len(non_zero_reward_steps)>=8:
+            batch = random.sample(non_zero_reward_steps, 8)
 
-        batch = random.sample(self.buffer, batch_size)
+        sample_size = batch_size - len(batch)
+        batch = batch + random.sample(self.buffer, sample_size)
 
         for experience in batch:
             state, action, reward, next_state, done = experience
