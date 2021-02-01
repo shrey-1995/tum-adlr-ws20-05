@@ -68,6 +68,7 @@ class KukaGymEnv(gym.Env):
     else:
       action_dim = 3
       self._action_bound = 1
+      #TODO: correct the action high and low space
       action_high = np.array([self._action_bound] * action_dim)
       self.action_space = spaces.Box(-action_high, action_high)
     self.observation_space = spaces.Box(-observation_high, observation_high)
@@ -105,6 +106,7 @@ class KukaGymEnv(gym.Env):
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
+    #TODO: check distance calculation
     self.prev_dist = np.zeros(4)
     self.prev_dist[0] = math.sqrt(math.pow(gripperPos[0] - blockPos[0], 2) + math.pow(gripperPos[1] - blockPos[1], 2) + math.pow(gripperPos[2] - blockPos[2], 2))
     self.prev_dist[1] = math.sqrt(math.pow(gripperPos[0] - blockPos1[0], 2) + math.pow(gripperPos[1] - blockPos1[1], 2) + math.pow(gripperPos[2] - blockPos1[2], 2))
@@ -166,7 +168,7 @@ class KukaGymEnv(gym.Env):
       self.init_position[1] - self.circles[2][0][1], 2))
     '''
 
-    #we return the relative x,y position and euler angle of block in gripper space
+    #TODO : check, we return the relative x,y position and euler angle of block in gripper space
     blockInGripperPosXYEulZ = [blockPosInGripper[0], blockPosInGripper[1], blockEulerInGripper[2], blockPosInGripper1[0], blockPosInGripper1[1],
                                blockEulerInGripper1[2], blockPosInGripper2[0], blockPosInGripper2[1], blockEulerInGripper2[2]]
 
@@ -210,6 +212,7 @@ class KukaGymEnv(gym.Env):
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
     curr_dist = np.zeros(4)
+    #TODO: check distnace calculation
     curr_dist[0] = math.sqrt(math.pow(gripperPos[0] - blockPos[0], 2) + math.pow(gripperPos[1] - blockPos[1], 2) + math.pow(gripperPos[2] - blockPos[2], 2))
     curr_dist[1] = math.sqrt(math.pow(gripperPos[0] - blockPos1[0], 2) + math.pow(gripperPos[1] - blockPos1[1], 2) + math.pow(gripperPos[2] - blockPos1[2], 2))
     curr_dist[2] = math.sqrt(math.pow(gripperPos[0] - blockPos2[0], 2) + math.pow(gripperPos[1] - blockPos2[1], 2) + math.pow(gripperPos[2] - blockPos2[2], 2))
@@ -219,6 +222,7 @@ class KukaGymEnv(gym.Env):
     current_visit = np.zeros(3)
     self.prev_dist = curr_dist
     ins_val = 0
+    #TODO: check whether the correct way to detect contact between finger and block
     closestPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
     closestPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
     closestPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
@@ -255,7 +259,7 @@ class KukaGymEnv(gym.Env):
 
       else:
         self.visit_next = 0
-        # step_reward[3] = -300
+        step_reward[3] = -300
 
         for i in range(len(self.visited)):
           self.visited[i] = 0
