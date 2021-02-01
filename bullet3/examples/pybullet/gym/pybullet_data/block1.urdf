@@ -16,7 +16,7 @@
         <box size="0.10 0.018 0.018"/>
       </geometry>
       <material name="blockmat">
-        <color rgba="1 0 0 1"/>
+        <color rgba="0 1 0 1"/>
       </material>
     </visual>
     <collision>

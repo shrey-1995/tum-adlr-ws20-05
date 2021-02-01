@@ -99,7 +99,7 @@ class Kuka:
     return observation
 
   def applyAction(self, motorCommands):
-
+    #TODO: Ask Leon
     #print ("self.numJoints")
     #print (self.numJoints)
     if (self.useInverseKinematics):

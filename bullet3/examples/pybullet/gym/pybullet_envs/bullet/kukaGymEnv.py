@@ -92,12 +92,12 @@ class KukaGymEnv(gym.Env):
     ypos = 0 + 0.2 * random.random()
     ang = 3.14 * 0.5 + 3.1415925438 * random.random()
     orn = p.getQuaternionFromEuler([0, 0, ang])
-    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), xpos, ypos, -0.15,
-                               orn[0], orn[1], orn[2], orn[3])
-    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), xpos-0.2, ypos+0.2, -0.15,
-                               orn[0], orn[1], orn[2], orn[3])
-    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), xpos+0.2, ypos, -0.15,
-                               orn[0], orn[1], orn[2], orn[3])
+    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos, ypos, -0.15),
+                               (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
+    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos-0.2, ypos+0.2, -0.15),
+                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
+    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos+0.2, ypos, -0.15),
+                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
 
     p.setGravity(0, 0, -10)
     self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
@@ -128,49 +128,13 @@ class KukaGymEnv(gym.Env):
 
   def getExtendedObservation(self):
     self._observation = self._kuka.getObservation()
-    gripperState = p.getLinkState(self._kuka.kukaUid, self._kuka.kukaGripperIndex)
-    gripperPos = gripperState[0]
-    gripperOrn = gripperState[1]
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
-    invGripperPos, invGripperOrn = p.invertTransform(gripperPos, gripperOrn)
-    gripperMat = p.getMatrixFromQuaternion(gripperOrn)
-    dir0 = [gripperMat[0], gripperMat[3], gripperMat[6]]
-    dir1 = [gripperMat[1], gripperMat[4], gripperMat[7]]
-    dir2 = [gripperMat[2], gripperMat[5], gripperMat[8]]
-
-    gripperEul = p.getEulerFromQuaternion(gripperOrn)
-    #print("gripperEul")
-    #print(gripperEul)
-    blockPosInGripper, blockOrnInGripper = p.multiplyTransforms(invGripperPos, invGripperOrn,
-                                                                blockPos, blockOrn)
-    blockPosInGripper1, blockOrnInGripper1 = p.multiplyTransforms(invGripperPos, invGripperOrn,
-                                                                blockPos1, blockOrn1)
-    blockPosInGripper2, blockOrnInGripper2 = p.multiplyTransforms(invGripperPos, invGripperOrn,
-                                                                blockPos2, blockOrn2)
-    projectedBlockPos2D = [blockPosInGripper[0], blockPosInGripper[1]]
-    blockEulerInGripper = p.getEulerFromQuaternion(blockOrnInGripper)
-    blockEulerInGripper1 = p.getEulerFromQuaternion(blockOrnInGripper1)
-    blockEulerInGripper2 = p.getEulerFromQuaternion(blockOrnInGripper2)
-    #print("projectedBlockPos2D")
-    #print(projectedBlockPos2D)
-    #print("blockEulerInGripper")
-    #print(blockEulerInGripper)
-    # Compute mindist
-    '''
-    self.prev_dist = np.zeros(4)
-    self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(
-      self.init_position[1] - self.circles[0][0][1], 2))
-    self.prev_dist[1] = math.sqrt(math.pow(self.init_position[0] - self.circles[1][0][0], 2) + math.pow(
-      self.init_position[1] - self.circles[1][0][1], 2))
-    self.prev_dist[2] = math.sqrt(math.pow(self.init_position[0] - self.circles[2][0][0], 2) + math.pow(
-      self.init_position[1] - self.circles[2][0][1], 2))
-    '''
 
     #TODO : check, we return the relative x,y position and euler angle of block in gripper space
-    blockInGripperPosXYEulZ = [blockPosInGripper[0], blockPosInGripper[1], blockEulerInGripper[2], blockPosInGripper1[0], blockPosInGripper1[1],
-                               blockEulerInGripper1[2], blockPosInGripper2[0], blockPosInGripper2[1], blockEulerInGripper2[2]]
+    blockInGripperPosXYEulZ = [blockPos[0], blockPos[1], blockPos[2], blockPos1[0], blockPos1[1], blockPos1[2],
+                                blockPos2[0], blockPos2[1], blockPos2[2]]
 
     #p.addUserDebugLine(gripperPos,[gripperPos[0]+dir0[0],gripperPos[1]+dir0[1],gripperPos[2]+dir0[2]],[1,0,0],lifeTime=1)
     #p.addUserDebugLine(gripperPos,[gripperPos[0]+dir1[0],gripperPos[1]+dir1[1],gripperPos[2]+dir1[2]],[0,1,0],lifeTime=1)
@@ -212,11 +176,11 @@ class KukaGymEnv(gym.Env):
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
     curr_dist = np.zeros(4)
-    #TODO: check distnace calculation
+    #TODO: check distance calculation
     curr_dist[0] = math.sqrt(math.pow(gripperPos[0] - blockPos[0], 2) + math.pow(gripperPos[1] - blockPos[1], 2) + math.pow(gripperPos[2] - blockPos[2], 2))
     curr_dist[1] = math.sqrt(math.pow(gripperPos[0] - blockPos1[0], 2) + math.pow(gripperPos[1] - blockPos1[1], 2) + math.pow(gripperPos[2] - blockPos1[2], 2))
     curr_dist[2] = math.sqrt(math.pow(gripperPos[0] - blockPos2[0], 2) + math.pow(gripperPos[1] - blockPos2[1], 2) + math.pow(gripperPos[2] - blockPos2[2], 2))
-    diff = self.prev_dist - curr_dist
+    diff = (self.prev_dist - curr_dist) * 10000
     # Init variables
     step_reward = np.zeros(4)
     current_visit = np.zeros(3)
@@ -229,10 +193,10 @@ class KukaGymEnv(gym.Env):
     if (len(closestPoints)):
       ins_val = 1
       intersection = 0
-    if (len(closestPoints1)):
+    elif (len(closestPoints1)):
       ins_val = 1
       intersection = 1
-    if (len(closestPoints2)):
+    elif (len(closestPoints2)):
       ins_val = 1
       intersection = 2
 
@@ -241,7 +205,7 @@ class KukaGymEnv(gym.Env):
 
     if ins_val:
       current_visit[intersection] = 1
-
+      step_reward[intersection] += VISITING_CIRCLE_REWARD
       if intersection == self.visit_next:
         # Preempt task on reaching the circle
         self.visited[intersection] = 1

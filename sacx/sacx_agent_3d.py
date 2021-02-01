@@ -253,7 +253,7 @@ class SACXAgent():
             #self.update_q_main(trajectories)
             #self.update_p_main(trajectories)
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=350)
-            if episode % 25 == 0:
+            if (episode+1) % 25 == 0:
                 test_rewards = self.test(1)
                 if test_rewards[0] > 0:
                     print('Something good happened')
