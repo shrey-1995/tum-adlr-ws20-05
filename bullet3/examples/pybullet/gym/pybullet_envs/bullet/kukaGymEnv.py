@@ -241,13 +241,12 @@ class KukaGymEnv(gym.Env):
       if intersection == self.visit_next:
         # Preempt task on reaching the circle
         self.visited[intersection] = 1
-        self.reward += VISITING_CIRCLE_REWARD
         step_reward[3] = VISITING_CIRCLE_REWARD * (intersection + 1)
         self.visit_next += 1
         if np.sum(self.visited) == len(self.visit_sequence):
           self.done = True
           step_reward[3] = FINISHING_REWARD
-          print("Done with reward: ", self.reward)
+          print("Done with reward: ", step_reward[3])
 
         print("Circle reached: ", step_reward)
 
@@ -256,14 +255,12 @@ class KukaGymEnv(gym.Env):
 
       else:
         self.visit_next = 0
-        self.reward -= 300
         # step_reward[3] = -300
 
         for i in range(len(self.visited)):
           self.visited[i] = 0
 
         if intersection == 0:
-          self.reward += VISITING_CIRCLE_REWARD
           self.visited[0] = 1
           step_reward[3] += VISITING_CIRCLE_REWARD
 
