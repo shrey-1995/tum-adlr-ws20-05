@@ -21,7 +21,7 @@ RENDER_HEIGHT = 720
 RENDER_WIDTH = 960
 VISITING_CIRCLE_REWARD = 100
 FINISHING_REWARD = 500
-SPARSE = True
+SPARSE = False
 class KukaGymEnv(gym.Env):
   metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
 
@@ -222,13 +222,13 @@ class KukaGymEnv(gym.Env):
     closestPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
     closestPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
     closestPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
-    if (len(closestPoints)):  # (actualEndEffectorPos[2] <= -0.43):
+    if (len(closestPoints)):
       ins_val = 1
       intersection = 0
-    if (len(closestPoints1)):  # (actualEndEffectorPos[2] <= -0.43):
+    if (len(closestPoints1)):
       ins_val = 1
       intersection = 1
-    if (len(closestPoints2)):  # (actualEndEffectorPos[2] <= -0.43):
+    if (len(closestPoints2)):
       ins_val = 1
       intersection = 2
 

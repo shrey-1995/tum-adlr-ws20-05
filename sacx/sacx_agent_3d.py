@@ -345,7 +345,7 @@ class SACXAgent():
         for episode in range(num_episodes):
             print("Testing episode {}\n".format(episode))
             state = self.env.reset()
-            np.append([state, [0, 0, 0, 0, 0, 0]])
+            state = np.append(state, [0, 0, 0, 0, 0, 0])
             episode_reward = 0
             for step in range(self.max_steps):
                 _, action = self.get_action(state, 3)  # Sample new action using the main task policy network
