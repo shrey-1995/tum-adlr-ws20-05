@@ -153,6 +153,8 @@ class SACXAgent():
         return temperatures
 
     def rescale_action(self, action):
+        action[4] = 0
+        action[3] = 0
         #TODO: change for finger angle from 0 to 0.3
         return action * 0.1
 

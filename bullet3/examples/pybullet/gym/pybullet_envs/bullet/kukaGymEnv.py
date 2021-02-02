@@ -92,11 +92,11 @@ class KukaGymEnv(gym.Env):
     ypos = 0 + 0.2 * random.random()
     ang = 3.14 * 0.5 + 3.1415925438 * random.random()
     orn = p.getQuaternionFromEuler([0, 0, ang])
-    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos, ypos, -0.15),
+    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos+0.2, ypos, -0.15),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos-0.2, ypos+0.2, -0.15),
+    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos, ypos, -0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos+0.2, ypos, -0.15),
+    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos-0.2, ypos, -0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
 
     p.setGravity(0, 0, -10)
@@ -186,10 +186,15 @@ class KukaGymEnv(gym.Env):
     current_visit = np.zeros(3)
     self.prev_dist = curr_dist
     ins_val = 0
+    maxDist = 0.005
+    closestPoints = p.getClosestPoints(self.blockUid, self._kuka.kukaUid, maxDist)
+    closestPoints1 = p.getClosestPoints(self.blockUid1, self._kuka.kukaUid, maxDist)
+    closestPoints2 = p.getClosestPoints(self.blockUid2, self._kuka.kukaUid, maxDist)
     #TODO: check whether the correct way to detect contact between finger and block
-    closestPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
-    closestPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
-    closestPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
+    contactPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
+    contactPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
+    contactPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
+
     if (len(closestPoints)):
       ins_val = 1
       intersection = 0
@@ -211,7 +216,7 @@ class KukaGymEnv(gym.Env):
         self.visited[intersection] = 1
         step_reward[3] = VISITING_CIRCLE_REWARD * (intersection + 1)
         self.visit_next += 1
-        if np.sum(self.visited) == len(self.visit_sequence):
+        if np.sum(self.visited) == len(self.visited):
           self.done = True
           step_reward[3] = FINISHING_REWARD
           print("Done with reward: ", step_reward[3])
