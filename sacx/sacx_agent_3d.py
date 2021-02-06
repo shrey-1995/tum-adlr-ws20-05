@@ -1,3 +1,4 @@
+import math
 import random
 import torch
 import torch.nn.functional as F
@@ -161,6 +162,8 @@ class SACXAgent():
     def get_action(self, state, task):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         mean, log_std = self.p_nets[task].forward(state)
+        if math.isnan(mean[0][0]):
+            print("why")
         std = log_std.exp()
 
         normal = Normal(mean, std)
@@ -212,7 +215,7 @@ class SACXAgent():
                     print("Switching to ", self.tasks[task])
 
                 z, action = self.get_action(state, task) # Sample new action using the task policy network
-                next_state, reward, done, visited_circles = self.env.step(action)
+                next_state, reward, done, visited_circles = self.env.step2(action)
                 if reward[3]!=0:
                     main_reward_list.append(step)
                     self.non_zero_rewards_q.append((state, action, np.array([reward]), next_state, done))
@@ -254,11 +257,11 @@ class SACXAgent():
             #trajectories = self.sample_trajectories()
             #self.update_q_main(trajectories)
             #self.update_p_main(trajectories)
-            self.update(self.training_batch_size, auxiliary=False, main=True, epochs=350)
-            if (episode+1) % 25 == 0:
+            #self.update(self.training_batch_size, auxiliary=False, main=True, epochs=350)
+            '''if (episode+1) % 25 == 0:
                 test_rewards = self.test(1)
                 if test_rewards[0] > 0:
-                    print('Something good happened')
+                    print('Something good happened')'''
             if (episode+1) % self.storing_frequence == 0:
                 self.store_models()
 
@@ -351,7 +354,7 @@ class SACXAgent():
             episode_reward = 0
             for step in range(self.max_steps):
                 _, action = self.get_action(state, 3)  # Sample new action using the main task policy network
-                next_state, reward, done, visited_circles = self.env.step(action)
+                next_state, reward, done, visited_circles = self.env.step2(action)
                 episode_reward += reward[3]
 
                 if done or step == self.max_steps - 1:

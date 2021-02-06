@@ -85,8 +85,8 @@ class KukaGymEnv(gym.Env):
     p.setTimeStep(self._timeStep)
     p.loadURDF(os.path.join(self._urdfRoot, "plane.urdf"), [0, 0, -1])
 
-    p.loadURDF(os.path.join(self._urdfRoot, "table/table.urdf"), 0.5000000, 0.00000, -.820000,
-               0.000000, 0.000000, 0.0, 1.0)
+    #p.loadURDF(os.path.join(self._urdfRoot, "table/table.urdf"), 0.5000000, 0.00000, -.820000,
+    #          0.000000, 0.000000, 0.0, 1.0)
 
     xpos = 0.55 + 0.12 * random.random()
     ypos = 0 + 0.2 * random.random()
@@ -98,25 +98,26 @@ class KukaGymEnv(gym.Env):
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos-0.2, ypos, -0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-
-    p.setGravity(0, 0, -10)
-    self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
-    gripperState = p.getLinkState(self._kuka.kukaUid, self._kuka.kukaGripperIndex)
-    gripperPos = gripperState[0]
+    self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.3, 0.3, 0.3),
+                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
+    #p.setGravity(0, 0, -10)
+    #self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
+    agentState = p.getBasePositionAndOrientation(self.agent)
+    agentPos = agentState[0]
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
     #TODO: check distance calculation
     self.prev_dist = np.zeros(4)
-    self.prev_dist[0] = math.sqrt(math.pow(gripperPos[0] - blockPos[0], 2) + math.pow(gripperPos[1] - blockPos[1], 2) + math.pow(gripperPos[2] - blockPos[2], 2))
-    self.prev_dist[1] = math.sqrt(math.pow(gripperPos[0] - blockPos1[0], 2) + math.pow(gripperPos[1] - blockPos1[1], 2) + math.pow(gripperPos[2] - blockPos1[2], 2))
-    self.prev_dist[2] = math.sqrt(math.pow(gripperPos[0] - blockPos2[0], 2) + math.pow(gripperPos[1] - blockPos2[1], 2) + math.pow(gripperPos[2] - blockPos2[2], 2))
+    self.prev_dist[0] = math.sqrt(math.pow(agentPos[0] - blockPos[0], 2) + math.pow(agentPos[1] - blockPos[1], 2) + math.pow(agentPos[2] - blockPos[2], 2))
+    self.prev_dist[1] = math.sqrt(math.pow(agentPos[0] - blockPos1[0], 2) + math.pow(agentPos[1] - blockPos1[1], 2) + math.pow(agentPos[2] - blockPos1[2], 2))
+    self.prev_dist[2] = math.sqrt(math.pow(agentPos[0] - blockPos2[0], 2) + math.pow(agentPos[1] - blockPos2[1], 2) + math.pow(agentPos[2] - blockPos2[2], 2))
     # Compute mindist
 
     self._envStepCounter = 0
     p.stepSimulation()
 
-    self._observation = self.getExtendedObservation()
+    self._observation = self.getExtendedObservation() + list(agentPos)
     return np.array(self._observation)
 
   def __del__(self):
@@ -127,7 +128,8 @@ class KukaGymEnv(gym.Env):
     return [seed]
 
   def getExtendedObservation(self):
-    self._observation = self._kuka.getObservation()
+    #change
+    #self._observation = self._kuka.getObservation()
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
@@ -140,8 +142,7 @@ class KukaGymEnv(gym.Env):
     #p.addUserDebugLine(gripperPos,[gripperPos[0]+dir1[0],gripperPos[1]+dir1[1],gripperPos[2]+dir1[2]],[0,1,0],lifeTime=1)
     #p.addUserDebugLine(gripperPos,[gripperPos[0]+dir2[0],gripperPos[1]+dir2[1],gripperPos[2]+dir2[2]],[0,0,1],lifeTime=1)
 
-    self._observation.extend(list(blockInGripperPosXYEulZ))
-    return self._observation
+    return list(blockInGripperPosXYEulZ)
 
   def step(self, action):
     if (self._isDiscrete):
@@ -163,37 +164,43 @@ class KukaGymEnv(gym.Env):
 
   def step2(self, action):
     for i in range(self._actionRepeat):
-      self._kuka.applyAction(action)
+      #change
+      #self._kuka.applyAction(action)
+      agentPos, agentOrn = p.getBasePositionAndOrientation(self.agent)
+      agentPos = agentPos + action[:3]
+      p.resetBasePositionAndOrientation(self.agent, agentPos, agentOrn)
       p.stepSimulation()
       self._envStepCounter += 1
     if self._renders:
       time.sleep(self._timeStep)
     self._observation = self.getExtendedObservation()
-    gripperState = p.getLinkState(self._kuka.kukaUid, self._kuka.kukaGripperIndex)
-    gripperPos = gripperState[0]
+    if math.isnan(self._observation[0]):
+      print("why")
+    #gripperState = p.getLinkState(self._kuka.kukaUid, self._kuka.kukaGripperIndex)
+    #gripperPos = gripperState[0]
     #gripperOrn = gripperState[1]
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
     curr_dist = np.zeros(4)
     #TODO: check distance calculation
-    curr_dist[0] = math.sqrt(math.pow(gripperPos[0] - blockPos[0], 2) + math.pow(gripperPos[1] - blockPos[1], 2) + math.pow(gripperPos[2] - blockPos[2], 2))
-    curr_dist[1] = math.sqrt(math.pow(gripperPos[0] - blockPos1[0], 2) + math.pow(gripperPos[1] - blockPos1[1], 2) + math.pow(gripperPos[2] - blockPos1[2], 2))
-    curr_dist[2] = math.sqrt(math.pow(gripperPos[0] - blockPos2[0], 2) + math.pow(gripperPos[1] - blockPos2[1], 2) + math.pow(gripperPos[2] - blockPos2[2], 2))
-    diff = (self.prev_dist - curr_dist) * 10000
+    curr_dist[0] = math.sqrt(math.pow(agentPos[0] - blockPos[0], 2) + math.pow(agentPos[1] - blockPos[1], 2) + math.pow(agentPos[2] - blockPos[2], 2))
+    curr_dist[1] = math.sqrt(math.pow(agentPos[0] - blockPos1[0], 2) + math.pow(agentPos[1] - blockPos1[1], 2) + math.pow(agentPos[2] - blockPos1[2], 2))
+    curr_dist[2] = math.sqrt(math.pow(agentPos[0] - blockPos2[0], 2) + math.pow(agentPos[1] - blockPos2[1], 2) + math.pow(agentPos[2] - blockPos2[2], 2))
+    diff = (self.prev_dist - curr_dist) * 10
     # Init variables
     step_reward = np.zeros(4)
     current_visit = np.zeros(3)
     self.prev_dist = curr_dist
     ins_val = 0
     maxDist = 0.005
-    closestPoints = p.getClosestPoints(self.blockUid, self._kuka.kukaUid, maxDist)
-    closestPoints1 = p.getClosestPoints(self.blockUid1, self._kuka.kukaUid, maxDist)
-    closestPoints2 = p.getClosestPoints(self.blockUid2, self._kuka.kukaUid, maxDist)
+    closestPoints = p.getClosestPoints(self.blockUid, self.agent, maxDist)
+    closestPoints1 = p.getClosestPoints(self.blockUid, self.agent, maxDist)
+    closestPoints2 = p.getClosestPoints(self.blockUid2, self.agent, maxDist)
     #TODO: check whether the correct way to detect contact between finger and block
-    contactPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
-    contactPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
-    contactPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
+    #contactPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
+    #contactPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
+    #contactPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
 
     if (len(closestPoints)):
       ins_val = 1
@@ -239,7 +246,7 @@ class KukaGymEnv(gym.Env):
 
     # Update obsetvation space
 
-    self._observation = self._observation + list(self.visited) + list(current_visit)
+    self._observation = self._observation + list(agentPos) + list(self.visited) + list(current_visit)
     #print("self._envStepCounter")
     #print(self._envStepCounter)
 
@@ -366,4 +373,4 @@ class KukaGymEnv(gym.Env):
     _step = step
 
   def get_state_size(self):
-    return len(self.getExtendedObservation())+6
+    return len(self.getExtendedObservation())+9
