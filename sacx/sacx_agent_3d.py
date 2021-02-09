@@ -38,7 +38,7 @@ class SACXAgent():
         self.env = env
         self.action_range = [env.action_space.low, env.action_space.high]
         self.obs_dim = env.get_state_size()
-        self.action_dim = 5
+        self.action_dim = 3
 
         # hyperparameters
         self.gamma = gamma
@@ -154,9 +154,6 @@ class SACXAgent():
         return temperatures
 
     def rescale_action(self, action):
-        action[4] = 0
-        action[3] = 0
-        #TODO: change for finger angle from 0 to 0.3
         return action * 0.01
 
     def get_action(self, state, task):
@@ -219,7 +216,7 @@ class SACXAgent():
                 if reward[3]!=0:
                     main_reward_list.append(step)
                     self.non_zero_rewards_q.append((state, action, np.array([reward]), next_state, done))
-                prob = self.get_probability(state, 3, z)
+                prob = self.get_probability(state, task, z)
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 trajectory.append((state, action, reward, next_state, done, z, prob))
                 episode_reward += reward[task]

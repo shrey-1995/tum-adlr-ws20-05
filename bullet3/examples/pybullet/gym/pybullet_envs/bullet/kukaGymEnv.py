@@ -118,7 +118,7 @@ class KukaGymEnv(gym.Env):
     p.stepSimulation()
 
     self._observation = self.getExtendedObservation() + list(agentPos)
-    return np.array(self._observation)
+    return np.array(self._observation)*5
 
   def __del__(self):
     p.disconnect()
@@ -168,7 +168,7 @@ class KukaGymEnv(gym.Env):
       #self._kuka.applyAction(action)
       agentPos_, agentOrn = p.getBasePositionAndOrientation(self.agent)
       agentPos = (max(-0.9, min(1, agentPos_[0])), max(-0.9, min(1, agentPos_[1])), max(-0.9, min(1, agentPos_[2])))
-      action = action*0.3
+      action = action
       agentPos = agentPos + action[:3]
       p.resetBasePositionAndOrientation(self.agent, agentPos, agentOrn)
       p.stepSimulation()
@@ -189,21 +189,24 @@ class KukaGymEnv(gym.Env):
     curr_dist[0] = math.sqrt(math.pow(agentPos[0] - blockPos[0], 2) + math.pow(agentPos[1] - blockPos[1], 2) + math.pow(agentPos[2] - blockPos[2], 2))
     curr_dist[1] = math.sqrt(math.pow(agentPos[0] - blockPos1[0], 2) + math.pow(agentPos[1] - blockPos1[1], 2) + math.pow(agentPos[2] - blockPos1[2], 2))
     curr_dist[2] = math.sqrt(math.pow(agentPos[0] - blockPos2[0], 2) + math.pow(agentPos[1] - blockPos2[1], 2) + math.pow(agentPos[2] - blockPos2[2], 2))
-    diff = (self.prev_dist - curr_dist) * 1000
+    #diff = (self.prev_dist - curr_dist) * 1000
+    diff = -curr_dist * 10
     # Init variables
     step_reward = np.zeros(4)
     current_visit = np.zeros(3)
     self.prev_dist = curr_dist
     ins_val = 0
     maxDist = 0.005
-    """
+
     closestPoints = p.getClosestPoints(self.blockUid, self.agent, maxDist)
     closestPoints1 = p.getClosestPoints(self.blockUid, self.agent, maxDist)
     closestPoints2 = p.getClosestPoints(self.blockUid2, self.agent, maxDist)
-"""
+
+    """
     closestPoints = p.getContactPoints(self.blockUid, self.agent)
     closestPoints1 = p.getContactPoints(self.blockUid, self.agent)
     closestPoints2 = p.getContactPoints(self.blockUid2, self.agent)
+    """
 
     #TODO: check whether the correct way to detect contact between finger and block
     #contactPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
@@ -259,9 +262,9 @@ class KukaGymEnv(gym.Env):
     #print(self._envStepCounter)
 
     #done = self._termination()
-    npaction = np.array([
-        action[3]
-    ])  #only penalize rotation until learning works well [action[0],action[1],action[3]])
+    #npaction = np.array([
+     #   action[3]
+    #])  #only penalize rotation until learning works well [action[0],action[1],action[3]])
     #actionCost = np.linalg.norm(npaction) * 10.
     #print("actionCost")
     #print(actionCost)
@@ -271,7 +274,7 @@ class KukaGymEnv(gym.Env):
 
     #print("len=%r" % len(self._observation))
 
-    return np.array(self._observation), step_reward, self.done, current_visit
+    return np.array(self._observation)*5, step_reward, self.done, current_visit
 
   def render(self, mode="rgb_array", close=False):
     if mode != "rgb_array":
