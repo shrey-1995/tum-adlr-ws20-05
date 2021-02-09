@@ -92,13 +92,15 @@ class KukaGymEnv(gym.Env):
     ypos = 0 + 0.2 * random.random()
     ang = 3.14 * 0.5 + 3.1415925438 * random.random()
     orn = p.getQuaternionFromEuler([0, 0, ang])
+
+
     self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos+0.2, ypos, -0.15),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos, ypos, -0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos-0.2, ypos, -0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.3, 0.3, 0),
+    self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0 + random.random(), 0 + random.random(), 0 + random.random()),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     #p.setGravity(0, 0, -10)
     #self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
