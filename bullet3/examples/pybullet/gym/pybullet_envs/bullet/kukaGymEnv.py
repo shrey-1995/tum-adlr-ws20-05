@@ -98,7 +98,7 @@ class KukaGymEnv(gym.Env):
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos-0.2, ypos, -0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.3, 0.3, 0.3),
+    self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.3, 0.3, 0),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     #p.setGravity(0, 0, -10)
     #self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
@@ -166,7 +166,9 @@ class KukaGymEnv(gym.Env):
     for i in range(self._actionRepeat):
       #change
       #self._kuka.applyAction(action)
-      agentPos, agentOrn = p.getBasePositionAndOrientation(self.agent)
+      agentPos_, agentOrn = p.getBasePositionAndOrientation(self.agent)
+      agentPos = (max(-0.9, min(1, agentPos_[0])), max(-0.9, min(1, agentPos_[1])), max(-0.9, min(1, agentPos_[2])))
+      action = action*0.3
       agentPos = agentPos + action[:3]
       p.resetBasePositionAndOrientation(self.agent, agentPos, agentOrn)
       p.stepSimulation()
@@ -187,16 +189,22 @@ class KukaGymEnv(gym.Env):
     curr_dist[0] = math.sqrt(math.pow(agentPos[0] - blockPos[0], 2) + math.pow(agentPos[1] - blockPos[1], 2) + math.pow(agentPos[2] - blockPos[2], 2))
     curr_dist[1] = math.sqrt(math.pow(agentPos[0] - blockPos1[0], 2) + math.pow(agentPos[1] - blockPos1[1], 2) + math.pow(agentPos[2] - blockPos1[2], 2))
     curr_dist[2] = math.sqrt(math.pow(agentPos[0] - blockPos2[0], 2) + math.pow(agentPos[1] - blockPos2[1], 2) + math.pow(agentPos[2] - blockPos2[2], 2))
-    diff = (self.prev_dist - curr_dist) * 10
+    diff = (self.prev_dist - curr_dist) * 1000
     # Init variables
     step_reward = np.zeros(4)
     current_visit = np.zeros(3)
     self.prev_dist = curr_dist
     ins_val = 0
     maxDist = 0.005
+    """
     closestPoints = p.getClosestPoints(self.blockUid, self.agent, maxDist)
     closestPoints1 = p.getClosestPoints(self.blockUid, self.agent, maxDist)
     closestPoints2 = p.getClosestPoints(self.blockUid2, self.agent, maxDist)
+"""
+    closestPoints = p.getContactPoints(self.blockUid, self.agent)
+    closestPoints1 = p.getContactPoints(self.blockUid, self.agent)
+    closestPoints2 = p.getContactPoints(self.blockUid2, self.agent)
+
     #TODO: check whether the correct way to detect contact between finger and block
     #contactPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
     #contactPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
@@ -246,7 +254,7 @@ class KukaGymEnv(gym.Env):
 
     # Update obsetvation space
 
-    self._observation = self._observation + list(agentPos) + list(self.visited) + list(current_visit)
+    self._observation = list(agentPos) + self._observation  + list(self.visited) + list(current_visit)
     #print("self._envStepCounter")
     #print(self._envStepCounter)
 
@@ -263,7 +271,7 @@ class KukaGymEnv(gym.Env):
 
     #print("len=%r" % len(self._observation))
 
-    return np.array(self._observation),  step_reward, self.done, current_visit
+    return np.array(self._observation), step_reward, self.done, current_visit
 
   def render(self, mode="rgb_array", close=False):
     if mode != "rgb_array":

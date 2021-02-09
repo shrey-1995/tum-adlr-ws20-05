@@ -157,7 +157,7 @@ class SACXAgent():
         action[4] = 0
         action[3] = 0
         #TODO: change for finger angle from 0 to 0.3
-        return action * 0.1
+        return action * 0.01
 
     def get_action(self, state, task):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
@@ -262,7 +262,7 @@ class SACXAgent():
                 test_rewards = self.test(1)
                 if test_rewards[0] > 0:
                     print('Something good happened')'''
-            if (episode+1) % self.storing_frequence == 0:
+            if (episode+1) % self.storing_frequence == 0 and self.store_path is not None:
                 self.store_models()
 
         return episode_rewards

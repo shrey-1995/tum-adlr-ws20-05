@@ -10,11 +10,11 @@ def main():
     gamma = 0.99
     tau = 0.01
     alpha = 0.2
-    a_lr = 1e-4
-    q_lr = 1e-4
-    p_lr = 1e-4
+    a_lr = 3e-4
+    q_lr = 3e-4
+    p_lr = 3e-4
     max_episodes = 500
-    max_steps = 3000
+    max_steps = 1000
     buffer_maxlen = 30000
     training_batch_size = 64
     schedule_period = 1000
@@ -36,7 +36,7 @@ def main():
                       storing_frequence=10,
                       share_layers=False,
                       learn_scheduler=learn_scheduler,
-                      store_path="./checkpoints/3d_env/dense_{}_{}.checkpoint",
+                      store_path=None,
                       load_from=None)
 
     rewards = agent.train()
