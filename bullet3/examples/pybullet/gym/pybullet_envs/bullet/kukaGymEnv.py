@@ -100,7 +100,7 @@ class KukaGymEnv(gym.Env):
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos-0.2, ypos, -0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0 + random.random(), 0 + random.random(), 0 + random.random()),
+    self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (-0.2 + random.random(), -0.2 + random.random(), -0.2 + random.random()),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     #p.setGravity(0, 0, -10)
     #self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
@@ -201,7 +201,7 @@ class KukaGymEnv(gym.Env):
     maxDist = 0.005
 
     closestPoints = p.getClosestPoints(self.blockUid, self.agent, maxDist)
-    closestPoints1 = p.getClosestPoints(self.blockUid, self.agent, maxDist)
+    closestPoints1 = p.getClosestPoints(self.blockUid1, self.agent, maxDist)
     closestPoints2 = p.getClosestPoints(self.blockUid2, self.agent, maxDist)
 
     """

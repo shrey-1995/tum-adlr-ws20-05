@@ -16,11 +16,11 @@ class ValueNetwork(nn.Module):
     def __init__(self, input_dim, output_dim, init_w=3e-3, shared_layer=None):
         super(ValueNetwork, self).__init__()
         if shared_layer is None:
-            self.fc1 = nn.Linear(input_dim, 128)
+            self.fc1 = nn.Linear(input_dim, 256)
         else:
             self.fc1 = shared_layer
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, output_dim)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc3 = nn.Linear(256, output_dim)
 
         self.fc3.weight.data.uniform_(-init_w, init_w)
         self.fc3.bias.data.uniform_(-init_w, init_w)
@@ -35,7 +35,7 @@ class ValueNetwork(nn.Module):
 
 class SoftQNetwork(nn.Module):
 
-    def __init__(self, num_inputs, num_actions, hidden_size=128, init_w=3e-3, shared_layer=None):
+    def __init__(self, num_inputs, num_actions, hidden_size=256, init_w=3e-3, shared_layer=None):
         super(SoftQNetwork, self).__init__()
         if shared_layer is None:
             self.linear1 = nn.Linear(num_inputs + num_actions, hidden_size)
@@ -57,7 +57,7 @@ class SoftQNetwork(nn.Module):
 
 class PolicyNetwork(nn.Module):
 
-    def __init__(self, num_inputs, num_actions, hidden_size=128, init_w=3e-3, log_std_min=-20, log_std_max=2, shared_layer=None):
+    def __init__(self, num_inputs, num_actions, hidden_size=256, init_w=3e-3, log_std_min=-20, log_std_max=2, shared_layer=None):
         super(PolicyNetwork, self).__init__()
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
