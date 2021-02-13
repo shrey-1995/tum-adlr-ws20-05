@@ -10,13 +10,13 @@ def main():
     gamma = 0.99
     tau = 0.01
     alpha = 0.2
-    a_lr = 2e-4
-    q_lr = 2e-4
-    p_lr = 2e-4
+    a_lr = 1e-4
+    q_lr = 1e-4
+    p_lr = 1e-4
     max_episodes = 100
     max_steps = 1500
     buffer_maxlen = 30000
-    training_batch_size = 64
+    training_batch_size = 128
     schedule_period = 500
     learn_scheduler = False
 

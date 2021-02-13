@@ -107,8 +107,8 @@ class Kuka:
       dx = motorCommands[0]
       dy = motorCommands[1]
       dz = motorCommands[2]
-      da = motorCommands[3]
-      fingerAngle = motorCommands[4]
+      da = 0
+      fingerAngle = 0
 
       state = p.getLinkState(self.kukaUid, self.kukaEndEffectorIndex)
       actualEndEffectorPos = state[0]
