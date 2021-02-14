@@ -2,8 +2,8 @@
 <robot name="block_2">
   <link name="block_2_base_link">
     <contact>
-      <lateral_friction value="1.0"/>
-      <spinning_friction value=".001"/>
+      <lateral_friction value="0"/>
+      <spinning_friction value="0"/>
     </contact>
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -22,7 +22,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <geometry>
-        <box size="0.10 0.018 0.018"/>
+        <box size="0 0 0"/>
       </geometry>
     </collision>
   </link>

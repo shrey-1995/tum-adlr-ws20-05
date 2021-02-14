@@ -78,7 +78,8 @@ class SACXAgent():
 
         for i, task in enumerate(self.tasks):
             if load_path is None:
-                policy_nets.append(PolicyNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer).to(self.device))
+                obs_dim = self.obs_dim if i==3 else 6
+                policy_nets.append(PolicyNetwork(obs_dim, self.action_dim, shared_layer=shared_layer).to(self.device))
             else:
                 policy_nets.append(torch.load(load_path.format('p_net', i)))
         return policy_nets
@@ -102,10 +103,11 @@ class SACXAgent():
 
         for i, task in enumerate(self.tasks):
             if load_path is None:
-                q_nets1.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_1).to(self.device))
-                q_nets2.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_2).to(self.device))
-                target_q_nets1.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_t_1).to(self.device))
-                target_q_nets2.append(SoftQNetwork(self.obs_dim, self.action_dim, shared_layer=shared_layer_t_2).to(self.device))
+                obs_dim = self.obs_dim if i == 3 else 6
+                q_nets1.append(SoftQNetwork(obs_dim, self.action_dim, shared_layer=shared_layer_1).to(self.device))
+                q_nets2.append(SoftQNetwork(obs_dim, self.action_dim, shared_layer=shared_layer_2).to(self.device))
+                target_q_nets1.append(SoftQNetwork(obs_dim, self.action_dim, shared_layer=shared_layer_t_1).to(self.device))
+                target_q_nets2.append(SoftQNetwork(obs_dim, self.action_dim, shared_layer=shared_layer_t_2).to(self.device))
 
                 # copy params to target param
                 for target_param, param in zip(target_q_nets1[i].parameters(), q_nets1[i].parameters()):
@@ -158,6 +160,10 @@ class SACXAgent():
 
     def get_action(self, state, task):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        if task<3:
+            agent_pos = state[:, :3]
+            goal_pos = state[:, 3*(task+1):3*(task+1)+3]
+            state = torch.cat((agent_pos, goal_pos), 1)
         mean, log_std = self.p_nets[task].forward(state)
         if math.isnan(mean[0][0]):
             print("why")
@@ -170,7 +176,13 @@ class SACXAgent():
         return z, self.rescale_action(action)
 
     def get_probability(self, state, task, z):
+
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        if task<3:
+            agent_pos = state[:, :3]
+            goal_pos = state[:, 3*(task+1):3*(task+1)+3]
+            state = torch.cat((agent_pos, goal_pos), 1)
+
         mean, log_std = self.p_nets[task](state)
         std = log_std.exp()
 
@@ -276,11 +288,19 @@ class SACXAgent():
         i = index
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size, index == 3, self.non_zero_rewards_q)
         states = torch.FloatTensor(states).to(self.device)
+        if index<3:
+            agent_pos = states[:, :3]
+            goal_pos = states[:, 3 * (i + 1):3 * (i + 1) + 3]
+            states = torch.cat((agent_pos, goal_pos), 1)
         actions = torch.FloatTensor(actions).to(self.device)
         rewards = torch.FloatTensor(rewards).to(self.device)
         rewards = rewards.reshape(batch_size, rewards.shape[-1])  # Reshape
         rewards = rewards[:, i:i + 1]  # Select only rewards for this task
         next_states = torch.FloatTensor(next_states).to(self.device)
+        if index<3:
+            agent_pos = next_states[:, :3]
+            goal_pos = next_states[:, 3 * (i + 1):3 * (i + 1) + 3]
+            next_states = torch.cat((agent_pos, goal_pos), 1)
         dones = torch.FloatTensor(dones).to(self.device)
         dones = dones.view(dones.size(0), -1)
 

@@ -109,13 +109,13 @@ class KukaGymEnv(gym.Env):
 
     self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos+0.2, ypos, 0.15),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos, ypos, -0.15),
+    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos, 0.1+ypos, 0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos-0.2, ypos, -0.15),
+    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos, ypos-0.1, 0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     #self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (-0.2 + random.random(), -0.2 + random.random(), -0.2 + random.random()),
     #                            (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    p.setGravity(0, 0, -10)
+    p.setGravity(0, 0, 0)
     self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
     #agentState = p.getBasePositionAndOrientation(self.agent)
     #agentPos = agentState[0]
@@ -158,7 +158,7 @@ class KukaGymEnv(gym.Env):
     #p.addUserDebugLine(gripperPos,[gripperPos[0]+dir1[0],gripperPos[1]+dir1[1],gripperPos[2]+dir1[2]],[0,1,0],lifeTime=1)
     #p.addUserDebugLine(gripperPos,[gripperPos[0]+dir2[0],gripperPos[1]+dir2[1],gripperPos[2]+dir2[2]],[0,0,1],lifeTime=1)
 
-    return list(blockInGripperPosXYEulZ)
+    return list(self._observation) + list(blockInGripperPosXYEulZ)
 
   def step(self, action):
     if (self._isDiscrete):
@@ -194,9 +194,8 @@ class KukaGymEnv(gym.Env):
     self._observation = self.getExtendedObservation()
     if math.isnan(self._observation[0]):
       print("why")
-    gripperState = p.getLinkState(self._kuka.kukaUid, self._kuka.kukaGripperIndex)
-    gripperPos = gripperState[0]
-    gripperOrn = gripperState[1]
+    gripperPos = self._kuka.fingerPos
+
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
@@ -214,9 +213,9 @@ class KukaGymEnv(gym.Env):
     ins_val = 0
     maxDist = 0.005
 
-    closestPoints = p.getClosestPoints(self.blockUid, self._kuka.kukaUid, maxDist)
-    closestPoints1 = p.getClosestPoints(self.blockUid1, self._kuka.kukaUid, maxDist)
-    closestPoints2 = p.getClosestPoints(self.blockUid2, self._kuka.kukaUid, maxDist)
+    #closestPoints = p.getClosestPoints(self.blockUid, self._kuka.kukaUid, maxDist)
+    #closestPoints1 = p.getClosestPoints(self.blockUid1, self._kuka.kukaUid, maxDist)
+    #closestPoints2 = p.getClosestPoints(self.blockUid2, self._kuka.kukaUid, maxDist)
 
     """
     closestPoints = p.getContactPoints(self.blockUid, self.agent)
@@ -229,13 +228,17 @@ class KukaGymEnv(gym.Env):
     #contactPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
     #contactPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
 
-    if (len(closestPoints)):
+    contact = False if curr_dist[0] > 0.01 else True
+    contact1 = False if curr_dist[1] > 0.01 else True
+    contact2 = False if curr_dist[2] > 0.01 else True
+
+    if (contact):
       ins_val = 1
       intersection = 0
-    elif (len(closestPoints1)):
+    elif (contact1):
       ins_val = 1
       intersection = 1
-    elif (len(closestPoints2)):
+    elif (contact2):
       ins_val = 1
       intersection = 2
 
