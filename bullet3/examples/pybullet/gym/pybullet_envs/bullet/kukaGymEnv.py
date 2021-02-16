@@ -103,11 +103,11 @@ class KukaGymEnv(gym.Env):
     p.setTimeStep(self._timeStep)
     p.loadURDF(os.path.join(self._urdfRoot, "plane.urdf"), [0, 0, -1])
 
-    p.loadURDF(os.path.join(self._urdfRoot, "table/table.urdf"), 0.5000000, 0.00000, -.820000,
-              0.000000, 0.000000, 0.0, 1.0)
+    #p.loadURDF(os.path.join(self._urdfRoot, "table/table.urdf"), 0.5000000, 0.00000, -.820000,
+             # 0.000000, 0.000000, 0.0, 1.0)
 
-    xpos = 0.4
-    ypos = 0
+    xpos = 0.65
+    ypos = 0.25
     zpos = 0.15
     ang = 3.14 * 0.5
     orn = p.getQuaternionFromEuler([0, 0, ang])
