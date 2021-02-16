@@ -120,8 +120,6 @@ class Kuka:
       self.fingerPos[1] = self.fingerPos[1] + dy
       self.fingerPos[2] = self.fingerPos[2] + dz
 
-      self.fingerPos = motorCommands
-
       self.endEffectorAngle = self.endEffectorAngle + da
       pos = self.fingerPos
       orn = p.getQuaternionFromEuler([0, -math.pi, 0])  # -math.pi,yaw])

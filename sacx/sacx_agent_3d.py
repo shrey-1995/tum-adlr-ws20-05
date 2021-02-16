@@ -224,7 +224,6 @@ class SACXAgent():
                     print("Switching to ", self.tasks[task])
 
                 z, action = self.get_action(state, task) # Sample new action using the task policy network
-                #action = [0.1, 0, 0]
                 next_state, reward, done, visited_circles = self.env.step2(action)
                 if reward[3]!=0:
                     main_reward_list.append(step)

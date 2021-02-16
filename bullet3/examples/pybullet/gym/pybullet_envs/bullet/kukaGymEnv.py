@@ -89,7 +89,7 @@ class KukaGymEnv(gym.Env):
 
     self.xslider = p.addUserDebugParameter("posX", -1, 1, 0)
     self.yslider = p.addUserDebugParameter("posY", -1, 1, 0)
-    self.zslider = p.addUserDebugParameter("posZ", -1, 1, 0)
+    self.zslider = p.addUserDebugParameter("posZ", -1, 1, 1)
 
 
   def reset(self):
@@ -106,8 +106,8 @@ class KukaGymEnv(gym.Env):
     p.loadURDF(os.path.join(self._urdfRoot, "table/table.urdf"), 0.5000000, 0.00000, -.820000,
               0.000000, 0.000000, 0.0, 1.0)
 
-    xpos = 0.5
-    ypos = 0.2
+    xpos = 0.4
+    ypos = 0
     zpos = 0.15
     ang = 3.14 * 0.5
     orn = p.getQuaternionFromEuler([0, 0, ang])
@@ -115,9 +115,9 @@ class KukaGymEnv(gym.Env):
 
     self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos, ypos, zpos),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos+0.3, 0.1+ypos, 0.15),
+    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos+0.15, 0.1+ypos, 0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos+0.3, ypos-0.1, 0.15),
+    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos+0.15, ypos-0.1, 0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     #self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (-0.2 + random.random(), -0.2 + random.random(), -0.2 + random.random()),
     #                            (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
@@ -185,9 +185,6 @@ class KukaGymEnv(gym.Env):
     return self.step2(realAction)
 
   def step2(self, action):
-
-    action = [p.readUserDebugParameter(self.xslider), p.readUserDebugParameter(self.yslider), p.readUserDebugParameter(self.zslider)]
-
     for i in range(self._actionRepeat):
       #change
       self._kuka.applyAction(action)
