@@ -156,7 +156,7 @@ class SACXAgent():
         return temperatures
 
     def rescale_action(self, action):
-        return action * 0.01
+        return action * 0.001
 
     def get_action(self, state, task):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
@@ -224,6 +224,7 @@ class SACXAgent():
                     print("Switching to ", self.tasks[task])
 
                 z, action = self.get_action(state, task) # Sample new action using the task policy network
+                #action = [0.1, 0, 0]
                 next_state, reward, done, visited_circles = self.env.step2(action)
                 if reward[3]!=0:
                     main_reward_list.append(step)
@@ -279,8 +280,9 @@ class SACXAgent():
     def update(self, batch_size, auxiliary=True, main=False, epochs=1):
         for e in range(epochs):
             if auxiliary is True:
-                for i in range(len(self.tasks)-1):
-                    self.update_task(batch_size, i)
+                #for i in range(len(self.tasks)-1):
+                 #   self.update_task(batch_size, i)
+                self.update_task(batch_size, 0)
             if main is True:
                 self.update_task(batch_size, len(self.tasks)-1)
 

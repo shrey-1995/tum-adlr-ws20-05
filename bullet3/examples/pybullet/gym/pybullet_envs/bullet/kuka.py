@@ -26,7 +26,7 @@ class Kuka:
     self.useOrientation = 1
     self.kukaEndEffectorIndex = 6
     self.kukaGripperIndex = 7
-    self.kukaFingerIndex = 13
+    self.kukaFingerIndex = 6
     #lower limits for null space
     self.ll = [-.967, -2, -2.96, 0.19, -2.96, -2.09, -3.05]
     #upper limits for null space
@@ -118,13 +118,9 @@ class Kuka:
 
       self.fingerPos[0] = self.fingerPos[0] + dx
       self.fingerPos[1] = self.fingerPos[1] + dy
-
-      #print ("self.fingerPos[2]")
-      #print (self.fingerPos[2])
-      #print("actualEndEffectorPos[2]")
-      #print(actualEndEffectorPos[2])
-      #if (dz<0 or actualEndEffectorPos[2]<0.5):
       self.fingerPos[2] = self.fingerPos[2] + dz
+
+      self.fingerPos = motorCommands
 
       self.endEffectorAngle = self.endEffectorAngle + da
       pos = self.fingerPos
@@ -158,18 +154,14 @@ class Kuka:
       if (self.useSimulation):
         for i in range(self.kukaEndEffectorIndex + 1):
           #print(i)
+          #jointPoses = tuple(np.zeros(12))
           p.setJointMotorControl2(bodyUniqueId=self.kukaUid,
                                   jointIndex=i,
                                   controlMode=p.POSITION_CONTROL,
-                                  targetPosition=jointPoses[i],
-                                  targetVelocity=0,
-                                  force=self.maxForce,
-                                  maxVelocity=self.maxVelocity,
-                                  positionGain=0.3,
-                                  velocityGain=1)
+                                  targetPosition=jointPoses[i])
       else:
         #reset the joint state (ignoring all dynamics, not recommended to use during simulation)
-        for i in range(self.numJoints):
+        for i in range(len(jointPoses)):
           p.resetJointState(self.kukaUid, i, jointPoses[i])
       #fingers
       p.setJointMotorControl2(self.kukaUid,

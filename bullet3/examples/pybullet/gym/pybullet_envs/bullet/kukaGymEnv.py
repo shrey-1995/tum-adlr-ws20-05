@@ -87,6 +87,11 @@ class KukaGymEnv(gym.Env):
     self.observation_space = spaces.Box(-observation_high, observation_high)
     self.viewer = None
 
+    self.xslider = p.addUserDebugParameter("posX", -1, 1, 0)
+    self.yslider = p.addUserDebugParameter("posY", -1, 1, 0)
+    self.zslider = p.addUserDebugParameter("posZ", -1, 1, 0)
+
+
   def reset(self):
     #print("KukaGymEnv _reset")
     self.visit_next = 0
@@ -103,11 +108,12 @@ class KukaGymEnv(gym.Env):
 
     xpos = 0.5
     ypos = 0.2
+    zpos = 0.15
     ang = 3.14 * 0.5
     orn = p.getQuaternionFromEuler([0, 0, ang])
 
 
-    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos+0.2, ypos, 0.15),
+    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos, ypos, zpos),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos+0.3, 0.1+ypos, 0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
@@ -179,6 +185,9 @@ class KukaGymEnv(gym.Env):
     return self.step2(realAction)
 
   def step2(self, action):
+
+    action = [p.readUserDebugParameter(self.xslider), p.readUserDebugParameter(self.yslider), p.readUserDebugParameter(self.zslider)]
+
     for i in range(self._actionRepeat):
       #change
       self._kuka.applyAction(action)
@@ -194,7 +203,8 @@ class KukaGymEnv(gym.Env):
     self._observation = self.getExtendedObservation()
     if math.isnan(self._observation[0]):
       print("why")
-    gripperPos = self._kuka.fingerPos
+
+    gripperPos = list(p.getLinkState(self._kuka.kukaUid, 6)[0])
 
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)
