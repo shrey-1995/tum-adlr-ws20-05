@@ -21,9 +21,9 @@ class Kuka:
     self.fingerBForce = 2.5
     self.fingerTipForce = 2
     self.useInverseKinematics = 1
-    self.useSimulation = 1
+    self.useSimulation = 0
     self.useNullSpace = 21
-    self.useOrientation = 1
+    self.useOrientation = 0
     self.kukaEndEffectorIndex = 6
     self.kukaGripperIndex = 7
     self.kukaFingerIndex = 6
@@ -64,7 +64,7 @@ class Kuka:
 
     #self.trayUid = p.loadURDF(os.path.join(self.urdfRootPath, "tray/tray.urdf"), 0.640000,
      #                         0.075000, -0.190000, 0.000000, 0.000000, 1.000000, 0.000000)
-    self.fingerPos = list(p.getLinkState(self.kukaUid, self.kukaFingerIndex)[0])
+    self.endEffectorPos = p.getLinkState(self.kukaUid, self.kukaEndEffectorIndex)[0]
     self.endEffectorAngle = 0
 
     self.motorNames = []
@@ -89,7 +89,7 @@ class Kuka:
 
   def getObservation(self):
     observation = []
-    state = p.getLinkState(self.kukaUid, self.kukaFingerIndex)
+    state = p.getLinkState(self.kukaUid, self.kukaEndEffectorIndex)
     pos = state[0]
     orn = state[1]
     euler = p.getEulerFromQuaternion(orn)
@@ -100,9 +100,9 @@ class Kuka:
     return observation
 
   def applyAction(self, motorCommands):
-    #TODO: Ask Leon
     #print ("self.numJoints")
     #print (self.numJoints)
+    #motorCommands = [0,0,0]
     if (self.useInverseKinematics):
 
       dx = motorCommands[0]
@@ -111,25 +111,39 @@ class Kuka:
       da = 0
       fingerAngle = 0
 
-      state = p.getLinkState(self.kukaUid, self.kukaFingerIndex)
-      self.fingerPos = list(state[0])
+      state = p.getLinkState(self.kukaUid, self.kukaEndEffectorIndex)
+      self.endEffectorPos = list(state[0])
       #print("pos[2] (getLinkState(kukaEndEffectorIndex)")
       #print(actualEndEffectorPos[2])
 
-      self.fingerPos[0] = self.fingerPos[0] + dx
-      self.fingerPos[1] = self.fingerPos[1] + dy
-      self.fingerPos[2] = self.fingerPos[2] + dz
+      self.endEffectorPos[0] = self.endEffectorPos[0] + dx
+      if (self.endEffectorPos[0] > 0.65):
+        self.endEffectorPos[0] = 0.65
+      if (self.endEffectorPos[0] < 0.50):
+        self.endEffectorPos[0] = 0.50
+      self.endEffectorPos[1] = self.endEffectorPos[1] + dy
+      if (self.endEffectorPos[1] < -0.17):
+        self.endEffectorPos[1] = -0.17
+      if (self.endEffectorPos[1] > 0.22):
+        self.endEffectorPos[1] = 0.22
+
+      #print ("self.endEffectorPos[2]")
+      #print (self.endEffectorPos[2])
+      #print("actualEndEffectorPos[2]")
+      #print(actualEndEffectorPos[2])
+      #if (dz<0 or actualEndEffectorPos[2]<0.5):
+      self.endEffectorPos[2] = self.endEffectorPos[2] + dz
 
       self.endEffectorAngle = self.endEffectorAngle + da
-      pos = self.fingerPos
+      pos = list(self.endEffectorPos)
       orn = p.getQuaternionFromEuler([0, -math.pi, 0])  # -math.pi,yaw])
       if (self.useNullSpace == 1):
         if (self.useOrientation == 1):
-          jointPoses = p.calculateInverseKinematics(self.kukaUid, self.kukaFingerIndex, pos,
+          jointPoses = p.calculateInverseKinematics(self.kukaUid, self.kukaEndEffectorIndex, pos,
                                                     orn, self.ll, self.ul, self.jr, self.rp)
         else:
           jointPoses = p.calculateInverseKinematics(self.kukaUid,
-                                                    self.kukaFingerIndex,
+                                                    self.kukaEndEffectorIndex,
                                                     pos,
                                                     lowerLimits=self.ll,
                                                     upperLimits=self.ul,
@@ -138,30 +152,35 @@ class Kuka:
       else:
         if (self.useOrientation == 1):
           jointPoses = p.calculateInverseKinematics(self.kukaUid,
-                                                    self.kukaFingerIndex,
+                                                    self.kukaEndEffectorIndex,
                                                     pos,
-                                                    orn,
-                                                    jointDamping=self.jd)
+                                                    orn)
         else:
-          jointPoses = p.calculateInverseKinematics(self.kukaUid, self.kukaFingerIndex, pos)
+          jointPoses = p.calculateInverseKinematics(self.kukaUid, self.kukaEndEffectorIndex, pos)
 
       #print("jointPoses")
       #print(jointPoses)
-      #print("self.kukaFingerIndex")
-      #print(self.kukaFingerIndex)
+      #print("self.kukaEndEffectorIndex")
+      #print(self.kukaEndEffectorIndex)
       if (self.useSimulation):
-        for i in range(self.kukaEndEffectorIndex + 1):
+        for i in range(12):
           #print(i)
           #jointPoses = tuple(np.zeros(12))
           p.setJointMotorControl2(bodyUniqueId=self.kukaUid,
                                   jointIndex=i,
                                   controlMode=p.POSITION_CONTROL,
-                                  targetPosition=jointPoses[i])
+                                  targetPosition=jointPoses[i],
+                                  targetVelocity=0,
+                                  force=self.maxForce,
+                                  maxVelocity=self.maxVelocity,
+                                  positionGain=0.3,
+                                  velocityGain=1)
       else:
         #reset the joint state (ignoring all dynamics, not recommended to use during simulation)
-        for i in range(len(jointPoses)):
+        for i in range(12):
           p.resetJointState(self.kukaUid, i, jointPoses[i])
       #fingers
+      '''
       p.setJointMotorControl2(self.kukaUid,
                               7,
                               p.POSITION_CONTROL,
@@ -188,7 +207,7 @@ class Kuka:
                               p.POSITION_CONTROL,
                               targetPosition=0,
                               force=self.fingerTipForce)
-
+    '''
     else:
       for action in range(len(motorCommands)):
         motor = self.motorIndices[action]

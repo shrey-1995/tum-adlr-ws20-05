@@ -156,7 +156,7 @@ class SACXAgent():
         return temperatures
 
     def rescale_action(self, action):
-        return action * 0.001
+        return action * 0.1
 
     def get_action(self, state, task):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
@@ -280,7 +280,6 @@ class SACXAgent():
         for e in range(epochs):
             if auxiliary is True:
                 #for i in range(len(self.tasks)-1):
-                 #   self.update_task(batch_size, i)
                 self.update_task(batch_size, 0)
             if main is True:
                 self.update_task(batch_size, len(self.tasks)-1)
@@ -423,7 +422,8 @@ class SACXAgent():
             if len(scheduled_tasks)==0:
                 return 0
             else:
-                return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
+                return 0
+                #return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
             #return random.choice([i for i in range(len(self.tasks)
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):

@@ -200,8 +200,7 @@ class KukaGymEnv(gym.Env):
     self._observation = self.getExtendedObservation()
     if math.isnan(self._observation[0]):
       print("why")
-
-    gripperPos = list(p.getLinkState(self._kuka.kukaUid, 6)[0])
+    gripperPos = self._kuka.endEffectorPos
 
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
     blockPos1, blockOrn1 = p.getBasePositionAndOrientation(self.blockUid1)

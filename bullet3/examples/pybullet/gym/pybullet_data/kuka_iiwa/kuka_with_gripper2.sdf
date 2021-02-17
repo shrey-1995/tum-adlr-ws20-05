@@ -53,7 +53,7 @@
       <pose frame=''>0 0 0.1575 0 -0 0</pose>
       <inertial>
         <pose frame=''>0 -0.03 0.12 0 -0 0</pose>
-        <mass>4</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.1</ixx>
           <ixy>0</ixy>
@@ -94,8 +94,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-296706</lower>
-          <upper>296706</upper>
+          <lower>-2.96706</lower>
+          <upper>2.96706</upper>
           <effort>300</effort>
           <velocity>10</velocity>
         </limit>
@@ -111,7 +111,7 @@
       <pose frame=''>0 0 0.36 1.5708 -0 -3.14159</pose>
       <inertial>
         <pose frame=''>0.0003 0.059 0.042 0 -0 0</pose>
-        <mass>4</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.05</ixx>
           <ixy>0</ixy>
@@ -152,8 +152,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-20944</lower>
-          <upper>20944</upper>
+          <lower>-2.0944</lower>
+          <upper>2.0944</upper>
           <effort>300</effort>
           <velocity>10</velocity>
         </limit>
@@ -169,7 +169,7 @@
       <pose frame=''>0 -0 0.5645 0 0 0</pose>
       <inertial>
         <pose frame=''>0 0.03 0.13 0 -0 0</pose>
-        <mass>3</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.08</ixx>
           <ixy>0</ixy>
@@ -210,8 +210,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-296706</lower>
-          <upper>296706</upper>
+          <lower>-2.96706</lower>
+          <upper>2.96706</upper>
           <effort>300</effort>
           <velocity>10</velocity>
         </limit>
@@ -227,7 +227,7 @@
       <pose frame=''>0 -0 0.78 1.5708 0 0</pose>
       <inertial>
         <pose frame=''>0 0.067 0.034 0 -0 0</pose>
-        <mass>2.7</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.03</ixx>
           <ixy>0</ixy>
@@ -268,8 +268,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-20944</lower>
-          <upper>20944</upper>
+          <lower>-2.0944</lower>
+          <upper>2.0944</upper>
           <effort>300</effort>
           <velocity>10</velocity>
         </limit>
@@ -285,7 +285,7 @@
       <pose frame=''>0 -0 0.9645 0 -0 -3.14159</pose>
       <inertial>
         <pose frame=''>0.0001 0.021 0.076 0 -0 0</pose>
-        <mass>1.7</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.02</ixx>
           <ixy>0</ixy>
@@ -326,8 +326,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-296706</lower>
-          <upper>296706</upper>
+          <lower>-2.96706</lower>
+          <upper>2.96706</upper>
           <effort>300</effort>
           <velocity>10</velocity>
         </limit>
@@ -343,7 +343,7 @@
       <pose frame=''>0 0 1.18 1.5708 -0 -3.14159</pose>
       <inertial>
         <pose frame=''>0 0.0006 0.0004 0 -0 0</pose>
-        <mass>1.8</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.005</ixx>
           <ixy>0</ixy>
@@ -384,8 +384,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-20944</lower>
-          <upper>20944</upper>
+          <lower>-2.0944</lower>
+          <upper>2.0944</upper>
           <effort>300</effort>
           <velocity>10</velocity>
         </limit>
@@ -401,7 +401,7 @@
       <pose frame=''>0 0 1.261 0 0 0</pose>
       <inertial>
         <pose frame=''>0 0 0.02 0 -0 0</pose>
-        <mass>1.3</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.001</ixx>
           <ixy>0</ixy>
@@ -442,8 +442,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-305433</lower>
-          <upper>305433</upper>
+          <lower>-3.05433</lower>
+          <upper>3.05433</upper>
           <effort>300</effort>
           <velocity>10</velocity>
         </limit>
@@ -465,13 +465,13 @@
       </axis>
     </joint>
 
-    
-    
+
+
     <link name='base_link'>
       <pose frame=''>0 0 1.305 0 -0 0</pose>
       <inertial>
         <pose frame=''>0 0 0 0 -0 0</pose>
-        <mass>0.2</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>1</ixx>
           <ixy>0</ixy>
@@ -517,8 +517,8 @@
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-104</lower>
-          <upper>1001</upper>
+          <lower>-10.4</lower>
+          <upper>10.01</upper>
           <effort>100</effort>
           <velocity>0</velocity>
         </limit>
@@ -534,7 +534,7 @@
       <pose frame=''>0 0.024 1.35 0 -0.05 0</pose>
       <inertial>
         <pose frame=''>0 0 0.04 0 0 0</pose>
-        <mass>0.2</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.1</ixx>
           <ixy>0</ixy>
@@ -565,7 +565,7 @@
             <size>0.01 0.01 0.08</size>
           </box>
         </geometry>
-        
+
       </collision>
     </link>
     <joint name='left_finger_base_joint' type='fixed'>
@@ -580,7 +580,7 @@
       <pose frame=''>-0.005 0.024 1.43 0 -0.3 0</pose>
       <inertial>
         <pose frame=''>-0.003 0 0.04 0 0 0 </pose>
-        <mass>0.2</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.1</ixx>
           <ixy>0</ixy>
@@ -621,8 +621,8 @@
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-101</lower>
-          <upper>103</upper>
+          <lower>-10.1</lower>
+          <upper>10.3</upper>
           <effort>0</effort>
           <velocity>0</velocity>
         </limit>
@@ -642,7 +642,7 @@
       <pose frame=''>-0.02 0.024 1.49 0 0.2 0</pose>
       <inertial>
         <pose frame=''>-0.005 0 0.026 0 0 0 </pose>
-        <mass>0.2</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.1</ixx>
           <ixy>0</ixy>
@@ -683,8 +683,8 @@
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-1001</lower>
-          <upper>104</upper>
+          <lower>-10.01</lower>
+          <upper>10.4</upper>
           <effort>100</effort>
           <velocity>0</velocity>
         </limit>
@@ -704,7 +704,7 @@
       <pose frame=''>0 0.024 1.35 0 0.05 0</pose>
       <inertial>
         <pose frame=''>0 0 0.04 0 0 0</pose>
-        <mass>0.2</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.1</ixx>
           <ixy>0</ixy>
@@ -755,7 +755,7 @@
       <pose frame=''>0.005 0.024 1.43 0 0.3 0</pose>
       <inertial>
         <pose frame=''>0.003 0 0.04 0 0 0 </pose>
-        <mass>0.2</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.1</ixx>
           <ixy>0</ixy>
@@ -796,8 +796,8 @@
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>0</lower>
-          <upper>0</upper>
+          <lower>-10.3</lower>
+          <upper>10.1</upper>
           <effort>0</effort>
           <velocity>0</velocity>
         </limit>
@@ -817,7 +817,7 @@
       <pose frame=''>0.02 0.024 1.49 0 -0.2 0</pose>
       <inertial>
         <pose frame=''>0.005 0 0.026 0 0 0 </pose>
-        <mass>0.2</mass>
+        <mass>0</mass>
         <inertia>
           <ixx>0.1</ixx>
           <ixy>0</ixy>
