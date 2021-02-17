@@ -156,7 +156,7 @@ class SACXAgent():
         return temperatures
 
     def rescale_action(self, action):
-        return action * 0.1
+        return action * 0.06
 
     def get_action(self, state, task):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
