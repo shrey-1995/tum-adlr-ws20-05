@@ -117,16 +117,20 @@ class Kuka:
       #print(actualEndEffectorPos[2])
 
       self.endEffectorPos[0] = self.endEffectorPos[0] + dx
+      '''
       if (self.endEffectorPos[0] > 0.65):
         self.endEffectorPos[0] = 0.65
       if (self.endEffectorPos[0] < 0.50):
         self.endEffectorPos[0] = 0.50
+      '''
+
       self.endEffectorPos[1] = self.endEffectorPos[1] + dy
+      '''
       if (self.endEffectorPos[1] < -0.17):
         self.endEffectorPos[1] = -0.17
       if (self.endEffectorPos[1] > 0.22):
         self.endEffectorPos[1] = 0.22
-
+      '''
       #print ("self.endEffectorPos[2]")
       #print (self.endEffectorPos[2])
       #print("actualEndEffectorPos[2]")

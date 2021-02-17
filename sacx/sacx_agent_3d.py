@@ -279,8 +279,8 @@ class SACXAgent():
     def update(self, batch_size, auxiliary=True, main=False, epochs=1):
         for e in range(epochs):
             if auxiliary is True:
-                #for i in range(len(self.tasks)-1):
-                self.update_task(batch_size, 0)
+                for i in range(len(self.tasks)-1):
+                    self.update_task(batch_size, i)
             if main is True:
                 self.update_task(batch_size, len(self.tasks)-1)
 
@@ -422,8 +422,8 @@ class SACXAgent():
             if len(scheduled_tasks)==0:
                 return 0
             else:
-                return 0
-                #return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
+                #return 0
+                return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
             #return random.choice([i for i in range(len(self.tasks)
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
