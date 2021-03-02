@@ -72,16 +72,12 @@ class KukaGymEnv(gym.Env):
     '''
     self.reset()
     observationDim = len(self.getExtendedObservation())
-    #print("observationDim")
-    #print(observationDim)
-
     observation_high = np.array([largeValObservation] * observationDim)
     if (self._isDiscrete):
       self.action_space = spaces.Discrete(7)
     else:
       action_dim = 3
       self._action_bound = 1
-      #TODO: correct the action high and low space
       action_high = np.array([self._action_bound] * action_dim)
       self.action_space = spaces.Box(-action_high, action_high)
     self.observation_space = spaces.Box(-observation_high, observation_high)
@@ -89,7 +85,7 @@ class KukaGymEnv(gym.Env):
 
     self.xslider = p.addUserDebugParameter("posX", -1, 1, 0)
     self.yslider = p.addUserDebugParameter("posY", -1, 1, 0)
-    self.zslider = p.addUserDebugParameter("posZ", -1, 1, 1)
+    self.zslider = p.addUserDebugParameter("posZ", -1, 1, 0)
 
 
   def reset(self):
@@ -113,11 +109,11 @@ class KukaGymEnv(gym.Env):
     orn = p.getQuaternionFromEuler([0, 0, ang])
 
 
-    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (xpos, ypos, zpos),
+    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.8, 0.25, zpos),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (xpos+0.15, 0.1+ypos, 0.15),
+    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (0, 0.8, 0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos+0.15, ypos-0.1, 0.15),
+    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos, -0.8, 0.15),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     #self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (-0.2 + random.random(), -0.2 + random.random(), -0.2 + random.random()),
     #                            (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
@@ -186,13 +182,8 @@ class KukaGymEnv(gym.Env):
 
   def step2(self, action):
     for i in range(self._actionRepeat):
-      #change
+      action[2] += 0.02
       self._kuka.applyAction(action)
-      #agentPos_, agentOrn = p.getBasePositionAndOrientation(self.agent)
-      #agentPos = (max(-0.9, min(1, agentPos_[0])), max(-0.9, min(1, agentPos_[1])), max(-0.9, min(1, agentPos_[2])))
-      #action = action
-      #agentPos = agentPos + action[:3]
-      #p.resetBasePositionAndOrientation(self.agent, agentPos, agentOrn)
       p.stepSimulation()
       self._envStepCounter += 1
     if self._renders:
@@ -219,20 +210,12 @@ class KukaGymEnv(gym.Env):
     ins_val = 0
     maxDist = 0.005
 
-    #closestPoints = p.getClosestPoints(self.blockUid, self._kuka.kukaUid, maxDist)
-    #closestPoints1 = p.getClosestPoints(self.blockUid1, self._kuka.kukaUid, maxDist)
-    #closestPoints2 = p.getClosestPoints(self.blockUid2, self._kuka.kukaUid, maxDist)
 
     """
     closestPoints = p.getContactPoints(self.blockUid, self.agent)
     closestPoints1 = p.getContactPoints(self.blockUid, self.agent)
     closestPoints2 = p.getContactPoints(self.blockUid2, self.agent)
     """
-
-    #TODO: check whether the correct way to detect contact between finger and block
-    #contactPoints = p.getContactPoints(self.blockUid, self._kuka.kukaUid)
-    #contactPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaUid)
-    #contactPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaUid)
 
     contact = False if curr_dist[0] > 0.1 else True
     contact1 = False if curr_dist[1] > 0.1 else True
@@ -250,6 +233,7 @@ class KukaGymEnv(gym.Env):
 
     if not SPARSE:
       step_reward += diff
+      step_reward[3] += step_reward[self.visit_next]
 
     if ins_val:
       current_visit[intersection] = 1

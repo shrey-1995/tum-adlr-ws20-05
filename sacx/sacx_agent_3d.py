@@ -156,7 +156,7 @@ class SACXAgent():
         return temperatures
 
     def rescale_action(self, action):
-        return action * 0.06
+        return action * 0.05
 
     def get_action(self, state, task):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
@@ -235,6 +235,7 @@ class SACXAgent():
                 if len(self.replay_buffer) > self.training_batch_size:
                     #print("Training")
                     self.update(self.training_batch_size, auxiliary=True, main=False, epochs=1)
+                    self.update(self.training_batch_size, auxiliary=False, main=True, epochs=1)
 
                 if done or step == self.max_steps - 1:
                     self.main_replay_buffer.append(trajectory)
@@ -273,6 +274,11 @@ class SACXAgent():
                     print('Something good happened')'''
             if (episode+1) % self.storing_frequence == 0 and self.store_path is not None:
                 self.store_models()
+
+            if (episode+1)%2==0:
+                print("===== TESTING EPISODE =====")
+                self.test(num_episodes=1)
+                print("===== END TESTING EPISODE =====")
 
         return episode_rewards
 
@@ -422,7 +428,6 @@ class SACXAgent():
             if len(scheduled_tasks)==0:
                 return 0
             else:
-                #return 0
                 return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
             #return random.choice([i for i in range(len(self.tasks)
 

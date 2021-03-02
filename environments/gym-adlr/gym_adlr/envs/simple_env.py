@@ -17,7 +17,7 @@ WINDOW_H = WINDOW_W
 
 N_CIRCLES = 3
 
-FIXED_POSITIONS = [(350, 80), (300, 400), (100, 200)]
+FIXED_POSITIONS = [(350, 150), (300, 400), (100, 200)]
 INIT_POS = WINDOW_W, 0
 SPARSE = False
 
@@ -27,14 +27,14 @@ if SPARSE:
     #### SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0
-    VISITING_CIRCLE_REWARD = 100
-    FINISHING_REWARD = 500
+    VISITING_CIRCLE_REWARD = 10
+    FINISHING_REWARD = 50
 else:
     #### NON SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0  # this value will be substracted during each step
-    VISITING_CIRCLE_REWARD = 100
-    FINISHING_REWARD = 500
+    VISITING_CIRCLE_REWARD = 50
+    FINISHING_REWARD = 50
 
 
 class SimpleEnvClean(gym.Env):
@@ -239,8 +239,11 @@ class SimpleEnvClean(gym.Env):
                     self.visit_sequence[intersection]=1
                     self.visited[intersection] = 1
                     self.reward += VISITING_CIRCLE_REWARD
-                    step_reward[3] = VISITING_CIRCLE_REWARD*(intersection+1)
+                    step_reward[3] = VISITING_CIRCLE_REWARD
                     self.visit_next+=1
+                    #TODO: REMOVE
+                    if intersection==0:
+                        self.done=True
                     if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True
                         step_reward[3] = FINISHING_REWARD
@@ -275,6 +278,7 @@ class SimpleEnvClean(gym.Env):
         if render:
             self.render()
 
+        step_reward[3] = step_reward[1]
         return self.observation_space, step_reward, self.done, visit
 
     def _destroy(self):
@@ -356,12 +360,3 @@ class SimpleEnvClean(gym.Env):
     """
         if self.viewer:
             self.viewer.close()
-
-
-if __name__ == '__main__':
-
-    env.reset()
-
-    while True:
-        env.render()
-    env.close()

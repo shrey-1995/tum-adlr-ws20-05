@@ -19,8 +19,8 @@ class BasicBuffer:
         next_state_batch = []
         done_batch = []
         batch = []
-        if main_task and len(non_zero_reward_steps)>=8:
-            batch = random.sample(non_zero_reward_steps, 8)
+        if main_task and len(non_zero_reward_steps)>0:
+            batch = random.sample(non_zero_reward_steps, min(8, len(non_zero_reward_steps)))
 
         sample_size = batch_size - len(batch)
         batch = batch + random.sample(self.buffer, sample_size)
