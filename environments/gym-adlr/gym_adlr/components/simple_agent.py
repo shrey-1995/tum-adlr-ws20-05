@@ -1,6 +1,5 @@
 from gym.envs.classic_control import rendering
 import numpy as np
-import torch
 
 WIDTH = 20
 HEIGHT = 20
