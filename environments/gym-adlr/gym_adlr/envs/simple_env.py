@@ -270,7 +270,7 @@ class SimpleEnvClean(gym.Env):
                         step_reward[3] += VISITING_CIRCLE_REWARD
 
         # Update obsetvation space
-        state = list(np.array([x, y])/500) + list(np.array(self.circles_positions)/500) + list(self.visited) + list(current_visit)
+        state = [x, y] + self.circles_positions + list(self.visited) + list(current_visit)
 
         self.observation_space = np.array(state, dtype=np.float32)
 
