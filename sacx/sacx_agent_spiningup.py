@@ -142,6 +142,7 @@ class SACXAgent():
         self.q_params = []
         self.pi_optimizers = []
         self.q_optimizers = []
+        self.temperatures = []
 
         for i in range(len(self.tasks)):
             ac_cr = actor_critic(env.get_state_size()[0], env.action_space, **ac_kwargs)
@@ -159,6 +160,12 @@ class SACXAgent():
             # Set up optimizers for policy and q-function
             self.pi_optimizers.append(Adam(self.actor_critics[i].pi.parameters(), lr=lr))
             self.q_optimizers.append(Adam(self.q_params[i], lr=lr))
+            
+            # Init temperatures
+            target_entropy = -torch.prod(torch.Tensor(act_dim)).item()
+            log_alpha = torch.zeros(1, requires_grad=True)
+            alpha_optim = Adam([log_alpha], lr=lr)
+            self.temperatures.append((deepcopy(alpha), target_entropy, log_alpha, alpha_optim))
 
         # Experience buffer
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size, num_tasks = 4)
@@ -218,12 +225,12 @@ class SACXAgent():
         q_pi = torch.min(q1_pi, q2_pi)
 
         # Entropy-regularized policy loss
-        loss_pi = (self.alpha * logp_pi - q_pi).mean()
+        loss_pi = (self.temperatures[task][0] * logp_pi - q_pi).mean()
 
         # Useful info for logging
         pi_info = dict(LogPi=logp_pi.detach().numpy())
 
-        return loss_pi, pi_info
+        return loss_pi, pi_info, logp_pi
 
     def update_tasks(self, data, auxiliary=False, main=False):
         if auxiliary:
@@ -247,7 +254,7 @@ class SACXAgent():
 
         # Next run one gradient descent step for pi.
         self.pi_optimizers[task].zero_grad()
-        loss_pi, pi_info = self.compute_loss_pi(data, task)
+        loss_pi, pi_info, log_pi = self.compute_loss_pi(data, task)
         loss_pi.backward()
         self.pi_optimizers[task].step()
 
@@ -262,6 +269,20 @@ class SACXAgent():
                 # params, as opposed to "mul" and "add", which would make new tensors.
                 p_targ.data.mul_(self.polyak)
                 p_targ.data.add_((1 - self.polyak) * p.data)
+                
+        # Update temperature. Recall info is stored as (alpha, target_entropy, log_alpha, alpha_optim)
+        log_alpha = self.temperatures[task][2]
+        target_entropy = self.temperatures[task][1]
+        alpha_loss = (log_alpha * (-log_pi - target_entropy).detach()).mean()
+
+        self.temperatures[task][3].zero_grad()  # Alpha optim
+        alpha_loss.backward()
+        self.temperatures[task][3].step()
+
+        self.temperatures[task] = (
+            log_alpha.exp(), self.temperatures[task][1], self.temperatures[task][2],
+            self.temperatures[task][3])
+
 
     def get_action(self, o, task, deterministic=False):
         return self.actor_critics[task].act(torch.as_tensor(o, dtype=torch.float32),

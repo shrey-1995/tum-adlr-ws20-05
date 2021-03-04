@@ -12,12 +12,16 @@ def combined_shape(length, shape=None):
         return (length,)
     return (length, shape) if np.isscalar(shape) else (length, *shape)
 
-def mlp(sizes, activation, output_activation=nn.Identity, init_w=3e-3):
+def mlp(sizes, activation, output_activation=nn.Identity, init_w=None):
     layers = []
     for j in range(len(sizes)-1):
         act = activation if j < len(sizes)-2 else output_activation
         layers += [nn.Linear(sizes[j], sizes[j+1]), act()]
-    layers[-2].weight.data.uniform_(-init_w, init_w)
+
+    if init_w:
+        layers[-2].weight.data.uniform_(-init_w, init_w)
+        layers[-2].bias.data.uniform_(-init_w, init_w)
+
     return nn.Sequential(*layers)
 
 def count_vars(module):
@@ -76,7 +80,7 @@ class MLPQFunction(nn.Module):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
-        self.q = mlp([obs_dim + act_dim] + list(hidden_sizes) + [1], activation)
+        self.q = mlp([obs_dim + act_dim] + list(hidden_sizes) + [1], activation, init_w=3e-3)
 
     def forward(self, obs, act):
         q = self.q(torch.cat([obs, act], dim=-1))
