@@ -227,7 +227,7 @@ class SimpleEnvClean(gym.Env):
             self.prev_dist = curr_dist
 
             if not SPARSE:
-                step_reward += diff
+                step_reward += np.minimum(diff, [3, 3, 3, 0])
 
             if intersection is not None:
                 step_reward[intersection] += VISITING_CIRCLE_REWARD
@@ -270,7 +270,7 @@ class SimpleEnvClean(gym.Env):
                         step_reward[3] += VISITING_CIRCLE_REWARD
 
         # Update obsetvation space
-        state = [x, y] + self.circles_positions + list(self.visited) + list(current_visit)
+        state = list(np.array([x, y])/500) + list(np.array(self.circles_positions)/500) + list(self.visited) + list(current_visit)
 
         self.observation_space = np.array(state, dtype=np.float32)
 

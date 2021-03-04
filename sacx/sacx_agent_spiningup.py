@@ -52,7 +52,7 @@ class SACXAgent():
                  learn_scheduler=False,
                  replay_size=int(1e6),
                  gamma=0.99,
-                 polyak=0.995,
+                 polyak=0.01,
                  lr=1e-3,
                  alpha=0.2,
                  batch_size=100,
@@ -227,8 +227,9 @@ class SACXAgent():
 
     def update_tasks(self, data, auxiliary=False, main=False):
         if auxiliary:
-            for task in range(len(self.tasks) - 1):
-                self.update(data, task)
+            self.update(data, 0)
+            #for task in range(len(self.tasks) - 1):
+                #self.update(data, task)
         if main:
             self.update(data, len(self.tasks) - 1)
 
@@ -314,6 +315,9 @@ class SACXAgent():
                 # Super critical, easy to overlook step: make sure to update
                 # most recent observation!
                 o = o2
+
+                if d is True:
+                    break
 
                 # Update handling
                 if t >= self.update_after and t % self.update_every == 0:

@@ -9,11 +9,12 @@ def main():
     # SAC Params
     gamma = 0.99
     alpha = 0.2
-    lr = 5e-3
+    lr = 1e-4
+    polyak = 0.99 # To update target parameters
     max_episodes = 1000
     max_steps = 1000
     buffer_maxlen = max_steps * 10
-    training_batch_size = 100
+    training_batch_size = 60
     schedule_period = 1000
     learn_scheduler = False
 
@@ -26,9 +27,10 @@ def main():
                       replay_size=buffer_maxlen,
                       gamma=gamma,
                       lr=lr,
+                      polyak=polyak,
                       alpha=alpha,
                       batch_size=training_batch_size,
-                      update_after=20,
+                      update_after=training_batch_size,
                       update_every=1)
 
     agent.train()
