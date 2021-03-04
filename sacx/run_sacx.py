@@ -15,7 +15,7 @@ def main():
     p_lr = 1e-4
     max_episodes = 1000
     max_steps = 500
-    buffer_maxlen = 30000
+    buffer_maxlen = 5000
     training_batch_size = 64
     schedule_period = 500
     learn_scheduler = False
@@ -36,7 +36,7 @@ def main():
                       storing_frequence=10,
                       share_layers=False,
                       learn_scheduler=learn_scheduler,
-                      store_path="./checkpoints/simple_env/sparse_{}_{}.checkpoint",
+                      store_path=None,
                       load_from=None)
 
     rewards = agent.train()

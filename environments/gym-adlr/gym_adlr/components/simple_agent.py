@@ -1,5 +1,6 @@
 from gym.envs.classic_control import rendering
 import numpy as np
+import torch
 
 WIDTH = 20
 HEIGHT = 20
@@ -17,6 +18,10 @@ class SimpleAgent:
         # dt is time for the step
 
         #assert len(action)==2, "Action must be a 2-dimensional tuple"
+        action = action.detach().numpy()
+
+        if len(action.shape)>1:
+            action = action.flatten()
 
         # Compute new position
         new_pos_x = self.position[0] + action[0]
