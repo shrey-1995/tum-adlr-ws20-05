@@ -170,7 +170,6 @@ class SACXAgent():
         # Experience buffer
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size, num_tasks = 4)
 
-        self.alpha = alpha
         self.gamma = gamma
         self.polyak = polyak
 
@@ -203,7 +202,7 @@ class SACXAgent():
             q1_pi_targ = self.actor_critics_target[task].q1(o2, a2)
             q2_pi_targ = self.actor_critics_target[task].q2(o2, a2)
             q_pi_targ = torch.min(q1_pi_targ, q2_pi_targ)
-            backup = r + self.gamma * (1 - d) * (q_pi_targ - self.alpha * logp_a2)
+            backup = r + self.gamma * (1 - d) * (q_pi_targ - self.temperatures[task][0] * logp_a2)
 
         # MSE loss against Bellman backup
         loss_q1 = ((q1 - backup) ** 2).mean()
