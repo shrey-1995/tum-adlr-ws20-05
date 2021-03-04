@@ -12,11 +12,12 @@ def combined_shape(length, shape=None):
         return (length,)
     return (length, shape) if np.isscalar(shape) else (length, *shape)
 
-def mlp(sizes, activation, output_activation=nn.Identity):
+def mlp(sizes, activation, output_activation=nn.Identity, init_w=3e-3):
     layers = []
     for j in range(len(sizes)-1):
         act = activation if j < len(sizes)-2 else output_activation
         layers += [nn.Linear(sizes[j], sizes[j+1]), act()]
+    layers[-2].weight.data.uniform_(-init_w, init_w)
     return nn.Sequential(*layers)
 
 def count_vars(module):
@@ -28,11 +29,15 @@ LOG_STD_MIN = -20
 
 class SquashedGaussianMLPActor(nn.Module):
 
-    def __init__(self, obs_dim, act_dim, hidden_sizes, activation, act_limit):
+    def __init__(self, obs_dim, act_dim, hidden_sizes, activation, act_limit, init_w=3e-3):
         super().__init__()
         self.net = mlp([obs_dim] + list(hidden_sizes), activation, activation)
         self.mu_layer = nn.Linear(hidden_sizes[-1], act_dim)
+        self.mu_layer.weight.data.uniform_(-init_w, init_w)
+        self.mu_layer.bias.data.uniform_(-init_w, init_w)
         self.log_std_layer = nn.Linear(hidden_sizes[-1], act_dim)
+        self.log_std_layer.weight.data.uniform_(-init_w, init_w)
+        self.log_std_layer.bias.data.uniform_(-init_w, init_w)
         self.act_limit = act_limit
 
     def forward(self, obs, deterministic=False, with_logprob=True):

@@ -241,7 +241,7 @@ class SimpleEnvClean(gym.Env):
                     self.reward += VISITING_CIRCLE_REWARD
                     step_reward[3] += VISITING_CIRCLE_REWARD
                     self.visit_next+=1
-                    if intersection==1:
+                    if intersection==0:
                         self.done=True
                     if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True

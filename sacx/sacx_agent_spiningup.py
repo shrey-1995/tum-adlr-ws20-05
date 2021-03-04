@@ -161,11 +161,7 @@ class SACXAgent():
             self.q_optimizers.append(Adam(self.q_params[i], lr=lr))
 
         # Experience buffer
-        self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size, num_tasks = len(self.tasks))
-
-        # Count variables (protip: try to get a feel for how different size networks behave!)
-        self.var_counts = tuple(core.count_vars(module) for module in
-                                [self.actor_critics[0].pi, self.actor_critics[0].q1, self.actor_critics[0].q2])
+        self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size, num_tasks = 4)
 
         self.alpha = alpha
         self.gamma = gamma
@@ -323,7 +319,7 @@ class SACXAgent():
                 if t >= self.update_after and t % self.update_every == 0:
                     for j in range(self.update_every):
                         batch = self.replay_buffer.sample_batch(self.batch_size)
-                        self.update_tasks(data=batch, auxiliary=True, main=True)
+                        self.update_tasks(data=batch, auxiliary=True, main=False)
 
                 if visited_circles[task] == 1:
                     task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler)
