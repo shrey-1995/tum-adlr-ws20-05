@@ -18,8 +18,6 @@ class SimpleAgent:
         # dt is time for the step
 
         #assert len(action)==2, "Action must be a 2-dimensional tuple"
-        action = action.detach().numpy()
-
         if len(action.shape)>1:
             action = action.flatten()
 

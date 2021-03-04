@@ -228,7 +228,6 @@ class SimpleEnvClean(gym.Env):
 
             if not SPARSE:
                 step_reward += diff
-                step_reward[3] = step_reward[0]
 
             if intersection is not None:
                 step_reward[intersection] += VISITING_CIRCLE_REWARD
@@ -242,6 +241,8 @@ class SimpleEnvClean(gym.Env):
                     self.reward += VISITING_CIRCLE_REWARD
                     step_reward[3] += VISITING_CIRCLE_REWARD
                     self.visit_next+=1
+                    if intersection==1:
+                        self.done=True
                     if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True
                         step_reward[3] = FINISHING_REWARD

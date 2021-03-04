@@ -64,7 +64,7 @@ class SACXAgent():
         self.replay_buffer = BasicBuffer(buffer_maxlen)
         self.main_replay_buffer = deque(maxlen=5)
         self.non_zero_main_rewards = deque(maxlen=5)
-        self.non_zero_rewards_q = deque(maxlen=30)
+        self.non_zero_rewards_q = deque(maxlen=5)
         # SAC-X
         self.scheduler = Scheduler(temperature=1, tasks=tasks, schedule_period=schedule_period)
 
@@ -216,7 +216,7 @@ class SACXAgent():
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
 
-                z, action, prob = self.get_action(state, task) # Sample new action using the task policy network
+                z, action, prob = self.get_action(state, 3) # Sample new action using the task policy network
                 next_state, reward, done, visited_circles = self.env.step(action)
                 if reward[3]>5:
                     main_reward_list.append(step)
@@ -225,9 +225,9 @@ class SACXAgent():
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 trajectory.append((state, action, reward, next_state, done, z, prob))
                 episode_reward += reward[task]
-                if len(self.replay_buffer) > self.training_batch_size:
+                #if len(self.replay_buffer) > self.training_batch_size:
                     #print("Training")
-                    self.update(self.training_batch_size, auxiliary=True, main=True, epochs=1)
+                    #self.update(self.training_batch_size, auxiliary=False, main=False, epochs=1)
 
                 if done or step == self.max_steps - 1:
                     #self.main_replay_buffer.append(trajectory)
@@ -254,11 +254,20 @@ class SACXAgent():
 
                 state = next_state
 
+                if (step+1)%10==0:
+                    trajectories = self.sample_trajectories(10, 8, False)
+                    self.update_q_main(trajectories)
+                    self.update_p_main(trajectories)
+
             if self.learn_scheduler is True and episode+1>7:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks, scheduled_tasks_steps=scheduled_tasks_steps)
 
+            trajectories = self.sample_trajectories(50, 8, True)
+            self.update_q_main(trajectories)
+            self.update_p_main(trajectories)
+
             #self.update(self.training_batch_size, auxiliary=False, main=True, epochs=350)
-            if (episode+1) % 5 == 0:
+            if (episode+1) % 100 == 0:
                 print("=== TESTING EPISODE ===")
                 test_rewards = self.test(1, 2000)
                 if test_rewards[0] > 0:
@@ -274,14 +283,10 @@ class SACXAgent():
         for e in range(epochs):
             if auxiliary is True:
                 self.update_task(batch_size, 0)
-                for i in range(len(self.tasks)-1):
-                    self.update_task(batch_size, i)
+                #for i in range(len(self.tasks)-1):
+                    #self.update_task(batch_size, i)
             if main is True:
                 self.update_task(batch_size, len(self.tasks)-1)
-                #trajectories = self.sample_trajectories(20, 8, False)
-                #self.update_q_main(trajectories)
-                #if len(self.replay_buffer) > self.training_batch_size:
-                    #self.update_p_main(self.training_batch_size)
 
     def update_task(self, batch_size, index):
         i = index
@@ -498,28 +503,15 @@ class SACXAgent():
         for target_param, param in zip(self.target_q_nets1[3].parameters(), self.q_nets1[3].parameters()):
             target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
 
-    def update_p_main(self, trajectories, index=3):
-        i = index
-        states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size, index == 3, self.non_zero_rewards_q)
-        states = torch.FloatTensor(states).to(self.device)
-
-        new_actions, log_pi = self.p_nets[i].sample(states)
-        min_q = self.q_nets1[i].forward(states, new_actions)
-        policy_loss = (self.entropy_temperatures[i][0] * log_pi - min_q).mean()
-
-        self.policy_optimizers[i].zero_grad()
+    def update_p_main(self, trajectories, gamma=0.95):
+        # Extract information out of trajectory
+        states = torch.FloatTensor([trajectory[0][0] for trajectory in trajectories])
+        # actions (for each task) for every state action pair in trajectory
+        task_actions, task_log_prob = self.p_nets[3].sample(states)
+        # Q-values (for each task) for every state and task-action pair in trajectory
+        task_q = self.q_nets1[3].forward(states, task_actions)
+        # delayed update for policy network and target q networks
+        policy_loss = (self.entropy_temperatures[3][0] * task_log_prob - task_q).mean()
+        self.policy_optimizers[3].zero_grad()
         policy_loss.backward()
-        self.policy_optimizers[i].step()
-
-        # update temperature. Recall info is stored as (alpha, target_entropy, log_alpha, alpha_optim)
-        log_alpha = self.entropy_temperatures[i][2]
-        target_entropy = self.entropy_temperatures[i][1]
-        alpha_loss = (log_alpha * (-log_pi - target_entropy).detach()).mean()
-
-        self.entropy_temperatures[i][3].zero_grad()  # Alpha optim
-        alpha_loss.backward()
-        self.entropy_temperatures[i][3].step()
-
-        self.entropy_temperatures[i] = (
-            log_alpha.exp(), self.entropy_temperatures[i][1], self.entropy_temperatures[i][2],
-            self.entropy_temperatures[i][3])
+        self.policy_optimizers[3].step()
