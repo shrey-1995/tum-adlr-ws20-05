@@ -24,6 +24,9 @@ class SimpleAgent:
         new_pos_x = self.position[0] + action[0]
         new_pos_y = self.position[1] + action[1]
 
+        if str(new_pos_x) == 'nan':
+            print('Stop here')
+
         new_pos_x = np.clip(new_pos_x, self.xmin, self.xmax)
         new_pos_y = np.clip(new_pos_y, self.ymin, self.ymax)
 

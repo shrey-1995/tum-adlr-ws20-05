@@ -160,7 +160,7 @@ class SACXAgent():
             # Set up optimizers for policy and q-function
             self.pi_optimizers.append(Adam(self.actor_critics[i].pi.parameters(), lr=lr))
             self.q_optimizers.append(Adam(self.q_params[i], lr=lr))
-            
+
             # Init temperatures
             target_entropy = -torch.prod(torch.Tensor(act_dim)).item()
             log_alpha = torch.zeros(1, requires_grad=True)
@@ -168,7 +168,7 @@ class SACXAgent():
             self.temperatures.append((deepcopy(alpha), target_entropy, log_alpha, alpha_optim))
 
         # Experience buffer
-        self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size, num_tasks = 4)
+        self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size, num_tasks=4)
 
         self.gamma = gamma
         self.polyak = polyak
@@ -233,9 +233,8 @@ class SACXAgent():
 
     def update_tasks(self, data, auxiliary=False, main=False):
         if auxiliary:
-            self.update(data, 0)
-            #for task in range(len(self.tasks) - 1):
-                #self.update(data, task)
+            for task in range(len(self.tasks) - 1):
+                self.update(data, task)
         if main:
             self.update(data, len(self.tasks) - 1)
 
@@ -268,7 +267,7 @@ class SACXAgent():
                 # params, as opposed to "mul" and "add", which would make new tensors.
                 p_targ.data.mul_(self.polyak)
                 p_targ.data.add_((1 - self.polyak) * p.data)
-                
+
         # Update temperature. Recall info is stored as (alpha, target_entropy, log_alpha, alpha_optim)
         log_alpha = self.temperatures[task][2]
         target_entropy = self.temperatures[task][1]
@@ -281,7 +280,6 @@ class SACXAgent():
         self.temperatures[task] = (
             log_alpha.exp(), self.temperatures[task][1], self.temperatures[task][2],
             self.temperatures[task][3])
-
 
     def get_action(self, o, task, deterministic=False):
         return self.actor_critics[task].act(torch.as_tensor(o, dtype=torch.float32),
@@ -358,4 +356,4 @@ class SACXAgent():
                 self.test_agent(1, 1000)
                 print("=== END TEST EPISODE ===")
 
-            print("Finished episode {}".format(episode+1))
+            print("Finished episode {}".format(episode + 1))
