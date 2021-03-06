@@ -17,7 +17,8 @@ def mlp(sizes, activation, output_activation=nn.Identity, init_w=None):
     for j in range(len(sizes)-1):
         act = activation if j < len(sizes)-2 else output_activation
         layers += [nn.Linear(sizes[j], sizes[j+1]), act()]
-
+    #No need for init_w initialization in second last layer
+    init_w = False
     if init_w:
         layers[-2].weight.data.uniform_(-init_w, init_w)
         layers[-2].bias.data.uniform_(-init_w, init_w)
@@ -57,7 +58,7 @@ class SquashedGaussianMLPActor(nn.Module):
             # Only used for evaluating policy at test time.
             pi_action = mu
         else:
-            pi_action = pi_distribution.rsample()
+            pi_action = pi_distribution.rsample()*2
 
         if with_logprob:
             # Compute logprob from Gaussian, and then apply correction for Tanh squashing.

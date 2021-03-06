@@ -1,3 +1,7 @@
+"""
+Source: https://github.com/cyoon1729/Policy-Gradient-Methods/blob/master/sac/models.py
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +36,7 @@ class SoftQNetwork(nn.Module):
 
 class PolicyNetwork(nn.Module):
 
-    def __init__(self, num_inputs, num_actions, action_range, hidden_size=256, init_w=3e-3, log_std_min=-20, log_std_max=2, shared_layer=None):
+    def __init__(self, num_inputs, num_actions, hidden_size=256, init_w=3e-3, log_std_min=-20, log_std_max=2, shared_layer=None):
         super(PolicyNetwork, self).__init__()
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
@@ -52,9 +56,6 @@ class PolicyNetwork(nn.Module):
         self.log_std_linear.weight.data.uniform_(-init_w, init_w)
         self.log_std_linear.bias.data.uniform_(-init_w, init_w)
 
-        self.action_range = torch.Tensor(action_range)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     def forward(self, state):
         x = F.relu(self.linear1(state))
         x = F.relu(self.linear2(x))
@@ -65,13 +66,7 @@ class PolicyNetwork(nn.Module):
 
         return mean, log_std
 
-    def rescale_action(self, action):
-        return action * (self.action_range[1] - self.action_range[0]) / 2.0 + \
-               (self.action_range[1] + self.action_range[0]) / 2.0
-
-    def sample(self, state, log_pi = True, epsilon=1e-6):
-        if not torch.is_tensor(state):
-            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+    def sample(self, state, epsilon=1e-6):
         mean, log_std = self.forward(state)
         std = log_std.exp()
 
@@ -82,12 +77,9 @@ class PolicyNetwork(nn.Module):
         log_pi = normal.log_prob(z) - torch.log(1 - action.pow(2) + epsilon)
         log_pi = log_pi.sum(1, keepdim=True)
 
-        return z, self.rescale_action(action), log_pi
+        return action, log_pi
 
     def get_probability(self, state, z):
-        if not torch.is_tensor(state):
-            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-
         mean, log_std = self.forward(state)
         std = log_std.exp()
 
