@@ -9,7 +9,7 @@ def main():
     # SAC Params
     gamma = 0.99
     alpha = 0.2
-    lr = 3e-3
+    lr = 1e-3
     polyak = 0.99 # To update target parameters
     max_episodes = 1000
     max_steps = 1000

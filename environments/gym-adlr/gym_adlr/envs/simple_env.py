@@ -274,7 +274,7 @@ class SimpleEnvClean(gym.Env):
         state = [x, y] + self.circles_positions + list(self.visited) + list(current_visit)
 
         self.observation_space = np.array(state, dtype=np.float32)
-        self.observation_space[:8] = (self.observation_space[:8]/500)
+        self.observation_space[:8] = (self.observation_space[:8]/100)-2.5
         if render:
             self.render()
 
