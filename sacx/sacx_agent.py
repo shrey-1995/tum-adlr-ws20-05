@@ -127,6 +127,9 @@ class SACXAgent():
         policy_optimizers = []
 
         for i, task in enumerate(self.tasks):
+            '''if i == 3:
+                q_lr = 5e-4
+                policy_lr = 5e-4'''
             if load_path is None:
                 q1_optimizers.append(optim.Adam(self.q_nets1[i].parameters(), lr=q_lr))
                 q2_optimizers.append(optim.Adam(self.q_nets2[i].parameters(), lr=q_lr))
@@ -188,7 +191,7 @@ class SACXAgent():
 
     def train(self):
         episode_rewards = []
-        task = None
+
         for episode in range(self.max_episodes):
             if episode == 100:
                 print('Stop for testing here')
@@ -201,6 +204,7 @@ class SACXAgent():
             trajectory = []
             self.main_replay_buffer.append(trajectory)
             self.non_zero_main_rewards.append(main_reward_list)
+            task = None
             for step in range(self.max_steps):
                 if (step-scheduled_task_step) % self.schedule_period == 0:
                     prev_task = task
@@ -265,10 +269,10 @@ class SACXAgent():
             self.update_q_main(trajectories)
             self.update_p_main(trajectories)'''
 
-            #self.update(self.training_batch_size, auxiliary=False, main=True, epochs=350)
-            if (episode+1) % 100 == 0:
+            self.update(self.training_batch_size, auxiliary=False, main=True, epochs=400)
+            if (episode+1) % 5 == 0:
                 print("=== TESTING EPISODE ===")
-                test_rewards = self.test(1, 2000)
+                test_rewards = self.test(5, 1500)
                 if test_rewards[0] > 0:
                     print('Something good happened')
 
@@ -363,8 +367,15 @@ class SACXAgent():
             state = self.env.reset()
             episode_reward = 0
             for step in range(max_steps):
-                _, action, _ = self.get_action(state, 3)  # Sample new action using the main task policy network
-                next_state, reward, done, visited_circles = self.env.step(action)
+                a_state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+                mean, _ = self.p_nets[3].forward(a_state)
+                #_, action, _ = self.get_action(state, 3)  # Sample new action using the main task policy network
+                action = mean.cpu().detach().squeeze(0).numpy()
+                next_state, reward, done, visited_circles = self.env.step(action*3)
+                if reward[3]>5:
+                    self.non_zero_rewards_q.append((state, action, np.array([reward]), next_state, done))
+                #prob = self.get_probability(state, task, z)
+                self.replay_buffer.push(state, action, reward, next_state, done)
                 episode_reward += reward[3]
 
                 if done or step == self.max_steps - 1:
@@ -412,11 +423,11 @@ class SACXAgent():
         if learn_scheduler is True:
             return self.scheduler.sample(scheduled_tasks)
         else:
-            if len(scheduled_tasks)==0:
+            return random.choice([i for i in range(len(self.tasks) - 2)])
+            '''if len(scheduled_tasks)==0:
                 return 0
             else:
-                return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
-            #return random.choice([i for i in range(len(self.tasks)
+                return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3'''
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:

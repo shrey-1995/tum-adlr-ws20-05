@@ -18,8 +18,8 @@ WINDOW_H = WINDOW_W
 N_CIRCLES = 3
 
 FIXED_POSITIONS = [(350, 150), (300, 400), (100, 200)]
-#INIT_POS = WINDOW_W, 0
-INIT_POS = (WINDOW_W / 2, WINDOW_H / 2)
+INIT_POS = WINDOW_W, WINDOW_H / 2
+#INIT_POS = (WINDOW_W / 2, WINDOW_H / 2)
 SPARSE = False
 
 EPISODE_LENGTH = 100  # Maximum number of actions that can be taken
@@ -28,14 +28,14 @@ if SPARSE:
     #### SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0
-    VISITING_CIRCLE_REWARD = 10
-    FINISHING_REWARD = 50
+    VISITING_CIRCLE_REWARD = [40,100,500]
+    FINISHING_REWARD = 500
 else:
     #### NON SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0  # this value will be substracted during each step
-    VISITING_CIRCLE_REWARD = 50
-    FINISHING_REWARD = 50
+    VISITING_CIRCLE_REWARD = [40,100,500]
+    FINISHING_REWARD = 500
 
 
 class SimpleEnvClean(gym.Env):
@@ -231,7 +231,7 @@ class SimpleEnvClean(gym.Env):
                 #step_reward += np.minimum(diff, [3, 3, 3, 0])
                 step_reward += diff
             if intersection is not None:
-                step_reward[intersection] += VISITING_CIRCLE_REWARD
+                step_reward[intersection] += 20
                 visit[intersection] = 1
                 current_visit[intersection] = 1
 
@@ -239,11 +239,11 @@ class SimpleEnvClean(gym.Env):
                     # Preempt task on reaching the circle
                     self.visit_sequence[intersection]=1
                     self.visited[intersection] = 1
-                    self.reward += VISITING_CIRCLE_REWARD
-                    step_reward[3] += VISITING_CIRCLE_REWARD
+                    self.reward += VISITING_CIRCLE_REWARD[intersection]
+                    step_reward[3] += VISITING_CIRCLE_REWARD[intersection]
                     self.visit_next+=1
-                    #if intersection==0:
-                    #   self.done=True
+                    if intersection==1:
+                       self.done=True
                     if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True
                         step_reward[3] = FINISHING_REWARD
@@ -265,10 +265,10 @@ class SimpleEnvClean(gym.Env):
 
                     if intersection==0:
                         self.visit_next += 1
-                        self.reward+=VISITING_CIRCLE_REWARD
+                        self.reward+=VISITING_CIRCLE_REWARD[intersection]
                         self.visited[0] = 1
                         self.visit_sequence[0] = 1
-                        step_reward[3] += VISITING_CIRCLE_REWARD
+                        step_reward[3] += VISITING_CIRCLE_REWARD[intersection]
 
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited) + list(current_visit)
