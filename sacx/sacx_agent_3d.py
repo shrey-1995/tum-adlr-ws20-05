@@ -186,11 +186,12 @@ class SACXAgent():
         prob = torch.exp(prob.sum(1, keepdim=True))
         prob = prob.cpu().detach().squeeze(0).numpy()
 
-        return z, self.rescale_action(action), prob
+        return z if not deterministic else mean, self.rescale_action(action), prob
 
     def get_probability(self, state, task, z):
 
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+
         if task<3:
             agent_pos = state[:, :3]
             goal_pos = state[:, 3*(task+1):3*(task+1)+3]
@@ -201,7 +202,6 @@ class SACXAgent():
 
         normal = Normal(mean, std)
         prob = normal.log_prob(z)
-
 
         prob = torch.exp(prob.sum(1, keepdim=True))
         prob = prob.cpu().detach().squeeze(0).numpy()
@@ -243,10 +243,11 @@ class SACXAgent():
                 if reward[3]>5:
                     main_reward_list.append(step)
                     self.non_zero_rewards_q.append((state, action, np.array([reward]), next_state, done))
-                #prob = self.get_probability(state, task, z)
+
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 trajectory.append((state, action, reward, next_state, done, z, prob))
                 episode_reward += reward[task]
+
                 if len(self.replay_buffer) > self.training_batch_size:
                     #print("Training")
                     self.update(self.training_batch_size, auxiliary=True, main=False, epochs=1)
@@ -400,7 +401,7 @@ class SACXAgent():
             state = np.append(state, [0, 0, 0, 0, 0, 0])
             episode_reward = 0
             for step in range(self.max_steps):
-                _, action, _ = self.get_action(state, 3, deterministic=True)  # Sample new action using the main task policy network
+                _, action, _ = self.get_action(state, 3, deterministic=False)  # Sample new action using the main task policy network
                 next_state, reward, done, visited_circles = self.env.step2(action)
 
                 if reward[3]>5:
