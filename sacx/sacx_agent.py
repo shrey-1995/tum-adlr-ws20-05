@@ -213,9 +213,9 @@ class SACXAgent():
                     t = 0
                     while task == prev_task:
                         t+=1
-                        task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler)
+                        task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler, episode>9)
                         if t > 10:  # Avoid the scheduler selecting same task forever
-                            task = self.schedule_task(scheduled_tasks, learn_scheduler=False)
+                            task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler, episode>9)
                             break
                     scheduled_tasks_steps.append(step)
                     scheduled_tasks.append(self.tasks[task])
@@ -248,9 +248,9 @@ class SACXAgent():
                         t = 0
                         while task==prev_task:
                             t+=1
-                            task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler)
+                            task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler, episode>9)
                             if t>10: # Avoid the scheduler selecting same task forever
-                                task = self.schedule_task(scheduled_tasks, learn_scheduler=False)
+                                task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler, episode>9)
                                 break
                         scheduled_tasks.append(self.tasks[task])
                         scheduled_tasks_steps.append(step)
@@ -272,12 +272,12 @@ class SACXAgent():
             self.update_p_main(trajectories)'''
 
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=200)
-            if episode>10 and (episode+1) % 3 == 0:
+            if (episode+1)>2 and (episode+1) % 3 == 0:
                 print("=== TESTING EPISODE ===")
-                for j in range(5):
+                for j in range(1):
                     test_rewards = self.test(1, 800)
-                    for k in range(10):
-                        self.update_task(64, len(self.tasks) - 1, False)
+                    #for k in range(10):
+                        #self.update_task(64, len(self.tasks) - 1, False)
                     if test_rewards[0] > 0:
                         print('Something good happened')
 
@@ -386,6 +386,9 @@ class SACXAgent():
                 self.main_replay_buffer_q.push(state, action, reward, next_state, done)
                 episode_reward += reward[3]
 
+                if len(self.main_replay_buffer_q)>64:
+                    self.update_task(64, len(self.tasks) - 1, False)
+
                 if done or step == max_steps - 1:
                     if done:
                          print("Task completed")
@@ -426,15 +429,18 @@ class SACXAgent():
         for i, q_opt in enumerate(self.q2_optimizers):
             torch.save(q_opt, self.store_path.format('q2_optimizer', i))
 
-    def schedule_task(self, scheduled_tasks, learn_scheduler):
+    def schedule_task(self, scheduled_tasks, learn_scheduler, oracle=True):
         if learn_scheduler is True:
             return self.scheduler.sample(scheduled_tasks)
         else:
-            return random.choice([i for i in range(len(self.tasks) - 1)])
-            '''if len(scheduled_tasks)==0:
-                return 0
+            if oracle:
+                if len(scheduled_tasks) == 0:
+                    return 0
+                else:
+                    return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
             else:
-                return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3'''
+                return random.choice([i for i in range(len(self.tasks) - 1)])
+
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:
