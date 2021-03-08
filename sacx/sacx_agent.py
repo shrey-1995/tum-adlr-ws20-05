@@ -162,17 +162,22 @@ class SACXAgent():
         return action * (self.action_range[1] - self.action_range[0]) / 2.0 + \
                (self.action_range[1] + self.action_range[0]) / 2.0
 
-    def get_action(self, state, task):
+    def get_action(self, state, task, deterministic=False):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         mean, log_std = self.p_nets[task].forward(state)
         std = log_std.exp()
 
         normal = Normal(mean, std)
-        z = normal.sample()
-        action = torch.tanh(z)
-        action = action.cpu().detach().squeeze(0).numpy()
 
-        prob = normal.log_prob(z)
+        if not deterministic:
+            z = normal.sample()
+            action = torch.tanh(z)
+            prob = normal.log_prob(z)
+        else:
+            action = torch.tanh(mean)
+            prob = normal.log_prob(mean)
+
+        action = action.cpu().detach().squeeze(0).numpy()
 
         prob = torch.exp(prob.sum(1, keepdim=True))
         prob = prob.cpu().detach().squeeze(0).numpy()
@@ -193,7 +198,7 @@ class SACXAgent():
 
     def train(self):
         episode_rewards = []
-
+        task=None
         for episode in range(self.max_episodes):
             if episode == 100:
                 print('Stop for testing here')
@@ -377,9 +382,9 @@ class SACXAgent():
             for step in range(max_steps):
                 #a_state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
                 #mean, _ = self.p_nets[3].forward(a_state)
-                _, action, _ = self.get_action(state, 3)  # Sample new action using the main task policy network
+                _, action, _ = self.get_action(state, 3, deterministic=True)  # Sample new action using the main task policy network
                 #action = mean.cpu().detach().squeeze(0).numpy()
-                next_state, reward, done, visited_circles = self.env.step(action*3)
+                next_state, reward, done, visited_circles = self.env.step(action)
                 if reward[3]>5:
                     self.non_zero_main_rewards_q.append((state, action, np.array([reward]), next_state, done))
                 #prob = self.get_probability(state, task, z)
