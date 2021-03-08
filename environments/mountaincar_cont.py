@@ -74,14 +74,14 @@ class MountainCar(TaskEnvironment):
 
         return state, reward, self.terminal, info
 
-    def reset(self):
+    def reset(self, r = True):
         """
         Reset the environment state
         :return: A state containing the initial state
         """
         self.terminal = False
         self.step_v = 0
-        return self.env.reset()
+        return self.env.reset(r)
 
     @staticmethod
     def auxiliary_tasks() -> list:

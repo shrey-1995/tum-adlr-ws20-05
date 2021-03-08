@@ -18,8 +18,8 @@ WINDOW_H = WINDOW_W
 N_CIRCLES = 3
 
 FIXED_POSITIONS = [(350, 150), (300, 400), (100, 200)]
-INIT_POS = WINDOW_W, WINDOW_H / 2
-#INIT_POS = (WINDOW_W / 2, WINDOW_H / 2)
+#INIT_POS = WINDOW_W, 0
+INIT_POS = (WINDOW_W / 2, WINDOW_H / 2)
 SPARSE = False
 
 EPISODE_LENGTH = 100  # Maximum number of actions that can be taken
@@ -28,14 +28,14 @@ if SPARSE:
     #### SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0
-    VISITING_CIRCLE_REWARD = [40,100,500]
-    FINISHING_REWARD = 500
+    VISITING_CIRCLE_REWARD = [40,90,160]
+    FINISHING_REWARD = 160
 else:
     #### NON SPARSE SETTING
     INIT_REWARD = 0
     STEP_REWARD = 0  # this value will be substracted during each step
-    VISITING_CIRCLE_REWARD = [40,100,500]
-    FINISHING_REWARD = 500
+    VISITING_CIRCLE_REWARD = [40,90,160]
+    FINISHING_REWARD = 160
 
 
 class SimpleEnvClean(gym.Env):
@@ -232,18 +232,18 @@ class SimpleEnvClean(gym.Env):
                 step_reward += diff
             if intersection is not None:
                 step_reward[intersection] += 20
-                visit[intersection] = 1
-                current_visit[intersection] = 1
+                visit[intersection] = 3
+                current_visit[intersection] = 3
 
                 if intersection == self.visit_next:
                     # Preempt task on reaching the circle
                     self.visit_sequence[intersection]=1
-                    self.visited[intersection] = 1
+                    self.visited[intersection] = 3
                     self.reward += VISITING_CIRCLE_REWARD[intersection]
                     step_reward[3] += VISITING_CIRCLE_REWARD[intersection]
                     self.visit_next+=1
-                    if intersection==1:
-                       self.done=True
+                    #if intersection==1:
+                    #   self.done=True
                     if np.sum(self.visit_sequence) == len(self.visit_sequence):
                         self.done = True
                         step_reward[3] = FINISHING_REWARD
@@ -255,18 +255,18 @@ class SimpleEnvClean(gym.Env):
                     pass
 
                 else:
-                    self.visit_next=0
+                    '''self.visit_next=0
                     self.reward-=300
                     #step_reward[3] = -300
 
                     for i in range(len(self.visit_sequence)):
                         self.visit_sequence[i] = 0
-                        self.visited[i] = 0
+                        self.visited[i] = 0'''
 
                     if intersection==0:
                         self.visit_next += 1
                         self.reward+=VISITING_CIRCLE_REWARD[intersection]
-                        self.visited[0] = 1
+                        self.visited[0] = 3
                         self.visit_sequence[0] = 1
                         step_reward[3] += VISITING_CIRCLE_REWARD[intersection]
 
@@ -285,7 +285,7 @@ class SimpleEnvClean(gym.Env):
         self.circles = {}
         self.circles_shapely = {}
 
-    def reset(self):
+    def reset(self, r=True):
         self._destroy()
 
         # Information about our reward
@@ -303,7 +303,10 @@ class SimpleEnvClean(gym.Env):
         self.visit_sequence = np.zeros(3)
 
         # Set initial position for the agent
-        self.init_position = INIT_POS
+        if r:
+            self.init_position = self._get_random_position(clearance=20)
+        else:
+            self.init_position = INIT_POS
 
         # Reset minimum distance
         self.prev_dist[0] = math.sqrt(math.pow(self.init_position[0] - self.circles[0][0][0], 2) + math.pow(
