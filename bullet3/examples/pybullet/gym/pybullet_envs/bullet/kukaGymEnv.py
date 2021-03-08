@@ -109,11 +109,11 @@ class KukaGymEnv(gym.Env):
     orn = p.getQuaternionFromEuler([0, 0, ang])
 
 
-    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.8, 0.25, zpos),
+    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.8, 0.25, 0.25),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (0, 0.8, 0.15),
+    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (0, 0.8, 0.25),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos, -0.8, 0.15),
+    self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos, -0.5, 0.25),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     #self.agent = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (-0.2 + random.random(), -0.2 + random.random(), -0.2 + random.random()),
     #                            (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
