@@ -19,8 +19,8 @@ largeValObservation = 100
 
 RENDER_HEIGHT = 720
 RENDER_WIDTH = 960
-VISITING_CIRCLE_REWARD = 10
-FINISHING_REWARD = 500
+VISITING_CIRCLE_REWARD = [40,90,160]
+FINISHING_REWARD = 160
 SPARSE = False
 class KukaGymEnv(gym.Env):
   metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
@@ -109,9 +109,9 @@ class KukaGymEnv(gym.Env):
     orn = p.getQuaternionFromEuler([0, 0, ang])
 
 
-    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0.8, 0.25, 0.25),
+    self.blockUid = p.loadURDF(os.path.join(self._urdfRoot, "block.urdf"), (0, 0.8, 0.25),
                                (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
-    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (0, 0.8, 0.25),
+    self.blockUid1 = p.loadURDF(os.path.join(self._urdfRoot, "block1.urdf"), (0.8, 0.25, 0.25),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     self.blockUid2 = p.loadURDF(os.path.join(self._urdfRoot, "block2.urdf"), (xpos, -0.5, 0.25),
                                 (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
@@ -198,9 +198,9 @@ class KukaGymEnv(gym.Env):
     blockPos2, blockOrn2 = p.getBasePositionAndOrientation(self.blockUid2)
     curr_dist = np.zeros(4)
     #TODO: check distance calculation
-    curr_dist[0] = math.sqrt(math.pow(gripperPos[0] - blockPos[0], 2) + math.pow(gripperPos[1] - blockPos[1], 2) + math.pow(gripperPos[2] - blockPos[2], 2))
-    curr_dist[1] = math.sqrt(math.pow(gripperPos[0] - blockPos1[0], 2) + math.pow(gripperPos[1] - blockPos1[1], 2) + math.pow(gripperPos[2] - blockPos1[2], 2))
-    curr_dist[2] = math.sqrt(math.pow(gripperPos[0] - blockPos2[0], 2) + math.pow(gripperPos[1] - blockPos2[1], 2) + math.pow(gripperPos[2] - blockPos2[2], 2))
+    curr_dist[0] = math.sqrt(math.pow(gripperPos[0] - blockPos[0]+0.05, 2) + math.pow(gripperPos[1] - blockPos[1]+0.05, 2) + math.pow(gripperPos[2] - blockPos[2]+0.05, 2))
+    curr_dist[1] = math.sqrt(math.pow(gripperPos[0] - blockPos1[0]+0.05, 2) + math.pow(gripperPos[1] - blockPos1[1]+0.05, 2) + math.pow(gripperPos[2] - blockPos1[2]+0.05, 2))
+    curr_dist[2] = math.sqrt(math.pow(gripperPos[0] - blockPos2[0]+0.05, 2) + math.pow(gripperPos[1] - blockPos2[1]+0.05, 2) + math.pow(gripperPos[2] - blockPos2[2]+0.05, 2))
     #diff = (self.prev_dist - curr_dist) * 1000
     diff = -curr_dist * 10
     # Init variables
@@ -210,38 +210,37 @@ class KukaGymEnv(gym.Env):
     ins_val = 0
     maxDist = 0.005
 
+    '''closestPoints = p.getContactPoints(self.blockUid, self._kuka.kukaEndEffectorIndex)
+    closestPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaEndEffectorIndex)
+    closestPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaEndEffectorIndex)'''
 
-    """
-    closestPoints = p.getContactPoints(self.blockUid, self.agent)
-    closestPoints1 = p.getContactPoints(self.blockUid, self.agent)
-    closestPoints2 = p.getContactPoints(self.blockUid2, self.agent)
-    """
-
-    contact = False if curr_dist[0] > 0.1 else True
-    contact1 = False if curr_dist[1] > 0.1 else True
-    contact2 = False if curr_dist[2] > 0.1 else True
+    contact = False if curr_dist[0] > 0.15 else True
+    contact1 = False if curr_dist[1] > 0.15 else True
+    contact2 = False if curr_dist[2] > 0.15 else True
 
     if (contact):
+      print('Intersecction')
       ins_val = 1
       intersection = 0
     elif (contact1):
+      print('Intersecction')
       ins_val = 1
       intersection = 1
     elif (contact2):
+      print('Intersecction')
       ins_val = 1
       intersection = 2
 
     if not SPARSE:
       step_reward += diff
-      step_reward[3] += step_reward[self.visit_next]
 
     if ins_val:
       current_visit[intersection] = 1
-      step_reward[intersection] += VISITING_CIRCLE_REWARD
+      step_reward[intersection] += VISITING_CIRCLE_REWARD[intersection]
       if intersection == self.visit_next:
         # Preempt task on reaching the circle
         self.visited[intersection] = 1
-        step_reward[3] = VISITING_CIRCLE_REWARD * (intersection + 1)
+        step_reward[3] = VISITING_CIRCLE_REWARD[intersection]
         self.visit_next += 1
         if np.sum(self.visited) == len(self.visited):
           self.done = True
