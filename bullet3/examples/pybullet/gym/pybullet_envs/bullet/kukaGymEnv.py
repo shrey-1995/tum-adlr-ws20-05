@@ -19,7 +19,7 @@ largeValObservation = 100
 
 RENDER_HEIGHT = 720
 RENDER_WIDTH = 960
-VISITING_CIRCLE_REWARD = [40,90,160]
+VISITING_CIRCLE_REWARD = [40, 90, 160]
 FINISHING_REWARD = 160
 SPARSE = False
 class KukaGymEnv(gym.Env):
@@ -88,7 +88,7 @@ class KukaGymEnv(gym.Env):
     self.zslider = p.addUserDebugParameter("posZ", -1, 1, 0)
 
 
-  def reset(self):
+  def reset(self, rd=True):
     #print("KukaGymEnv _reset")
     self.visit_next = 0
     self.visited = np.zeros(3)
@@ -119,6 +119,15 @@ class KukaGymEnv(gym.Env):
     #                            (orn[0], orn[1], orn[2], orn[3]), useFixedBase=True)
     p.setGravity(0, 0, 0)
     self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
+    state = p.getLinkState(self._kuka.kukaUid, self._kuka.kukaEndEffectorIndex)
+    if rd:
+      self.endEffectorPos = list((np.random.random(),np.random.random(),np.random.random()))
+    else:
+      self.endEffectorPos = list((0.5,0.5,0.5))
+    pos = list(self.endEffectorPos)
+    jointPoses = p.calculateInverseKinematics(self._kuka.kukaUid, self._kuka.kukaEndEffectorIndex, pos)
+    for i in range(12):
+      p.resetJointState(self._kuka.kukaUid, i, jointPoses[i])
     #agentState = p.getBasePositionAndOrientation(self.agent)
     #agentPos = agentState[0]
     blockPos, blockOrn = p.getBasePositionAndOrientation(self.blockUid)
@@ -219,15 +228,15 @@ class KukaGymEnv(gym.Env):
     contact2 = False if curr_dist[2] > 0.15 else True
 
     if (contact):
-      print('Intersecction')
+      #print('Intersecction 0')
       ins_val = 1
       intersection = 0
     elif (contact1):
-      print('Intersecction')
+      #print('Intersecction 1')
       ins_val = 1
       intersection = 1
     elif (contact2):
-      print('Intersecction')
+      #print('Intersecction 2')
       ins_val = 1
       intersection = 2
 
@@ -236,7 +245,7 @@ class KukaGymEnv(gym.Env):
 
     if ins_val:
       current_visit[intersection] = 1
-      step_reward[intersection] += VISITING_CIRCLE_REWARD[intersection]
+      step_reward[intersection] += 5
       if intersection == self.visit_next:
         # Preempt task on reaching the circle
         self.visited[intersection] = 1
@@ -248,7 +257,7 @@ class KukaGymEnv(gym.Env):
           print("Done with reward: ", step_reward[3])
 
         print("Circle reached: ", step_reward)
-
+      '''
       elif intersection == self.visit_next - 1:
         pass
 
@@ -261,7 +270,7 @@ class KukaGymEnv(gym.Env):
 
         if intersection == 0:
           self.visited[0] = 1
-          step_reward[3] += VISITING_CIRCLE_REWARD
+          step_reward[3] += VISITING_CIRCLE_REWARD'''
 
     # Update observation space
     self._observation = self._observation + list(self.visited) + list(current_visit)

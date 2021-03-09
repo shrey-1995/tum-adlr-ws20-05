@@ -131,6 +131,9 @@ class SACXAgent():
         policy_optimizers = []
 
         for i, task in enumerate(self.tasks):
+            '''if i == 3:
+                q_lr = 3e-4
+                policy_lr = 3e-4'''
             if load_path is None:
                 q1_optimizers.append(optim.Adam(self.q_nets1[i].parameters(), lr=q_lr))
                 q2_optimizers.append(optim.Adam(self.q_nets2[i].parameters(), lr=q_lr))
@@ -281,7 +284,7 @@ class SACXAgent():
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks, scheduled_tasks_steps=scheduled_tasks_steps)
 
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=200)
-            if (episode+1)>2 and (episode+1) % 3 == 0:
+            if (episode+1)>8 and (episode+1) % 3 == 0:
                 print("=== TESTING EPISODE ===")
                 for j in range(1):
                     test_rewards = self.test(1, 500)
@@ -397,7 +400,7 @@ class SACXAgent():
 
         for episode in range(num_episodes):
             print("Testing episode {}\n".format(episode))
-            state = self.env.reset()
+            state = self.env.reset(False)
             state = np.append(state, [0, 0, 0, 0, 0, 0])
             episode_reward = 0
             for step in range(self.max_steps):
@@ -410,8 +413,8 @@ class SACXAgent():
                 self.main_replay_buffer_q.push(state, action, reward, next_state, done)
                 episode_reward += reward[3]
 
-                if len(self.main_replay_buffer_q)>128:
-                    self.update_task(128, len(self.tasks) - 1, False)
+                if len(self.main_replay_buffer_q)>64:
+                    self.update_task(64, len(self.tasks) - 1, False)
 
                 if done or step == self.max_steps - 1:
                     if done:
@@ -458,6 +461,7 @@ class SACXAgent():
         if learn_scheduler is True:
             return self.scheduler.sample(scheduled_tasks)
         else:
+            choice = np.random.random()
             if oracle:
                 if len(scheduled_tasks) == 0:
                     return 0

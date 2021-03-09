@@ -129,9 +129,9 @@ class SACXAgent():
         policy_optimizers = []
 
         for i, task in enumerate(self.tasks):
-            '''if i == 3:
-                q_lr = 6e-5
-                policy_lr = 6e-5'''
+            if i == 3:
+                q_lr = 3e-4
+                policy_lr = 3e-4
             if load_path is None:
                 q1_optimizers.append(optim.Adam(self.q_nets1[i].parameters(), lr=q_lr))
                 q2_optimizers.append(optim.Adam(self.q_nets2[i].parameters(), lr=q_lr))
@@ -277,7 +277,7 @@ class SACXAgent():
             self.update_p_main(trajectories)'''
 
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=200)
-            if (episode+1)>2 and (episode+1) % 3 == 0:
+            if (episode+1)>5 and (episode+1) % 3 == 0:
                 print("=== TESTING EPISODE ===")
                 for j in range(1):
                     test_rewards = self.test(1, 800)
@@ -382,7 +382,7 @@ class SACXAgent():
             for step in range(max_steps):
                 #a_state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
                 #mean, _ = self.p_nets[3].forward(a_state)
-                _, action, _ = self.get_action(state, 3, deterministic=True)  # Sample new action using the main task policy network
+                _, action, _ = self.get_action(state, 3)  # Sample new action using the main task policy network
                 #action = mean.cpu().detach().squeeze(0).numpy()
                 next_state, reward, done, visited_circles = self.env.step(action)
                 if reward[3]>5:
@@ -438,7 +438,8 @@ class SACXAgent():
         if learn_scheduler is True:
             return self.scheduler.sample(scheduled_tasks)
         else:
-            if oracle:
+            choice = np.random.random()
+            if choice < 0.7:
                 if len(scheduled_tasks) == 0:
                     return 0
                 else:

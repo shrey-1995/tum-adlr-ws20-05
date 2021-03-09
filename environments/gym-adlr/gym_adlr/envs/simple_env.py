@@ -250,25 +250,28 @@ class SimpleEnvClean(gym.Env):
                         print("Done with reward: ", self.reward)
 
                     print("Circle reached: ", step_reward)
-
+                '''
                 elif intersection == self.visit_next-1:
                     pass
 
                 else:
-                    '''self.visit_next=0
+                    self.visit_next=0
                     self.reward-=300
                     #step_reward[3] = -300
 
                     for i in range(len(self.visit_sequence)):
                         self.visit_sequence[i] = 0
-                        self.visited[i] = 0'''
+                        self.visited[i] = 0
 
                     if intersection==0:
-                        self.visit_next += 1
+                        for i in range(len(self.visit_sequence)):
+                            self.visit_sequence[i] = 0
+                            self.visited[i] = 0
+                        self.visit_next = 1
                         self.reward+=VISITING_CIRCLE_REWARD[intersection]
                         self.visited[0] = 3
                         self.visit_sequence[0] = 1
-                        step_reward[3] += VISITING_CIRCLE_REWARD[intersection]
+                        step_reward[3] += VISITING_CIRCLE_REWARD[intersection]'''
 
         # Update obsetvation space
         state = [x, y] + self.circles_positions + list(self.visited) + list(current_visit)

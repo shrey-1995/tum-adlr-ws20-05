@@ -10,14 +10,14 @@ def main():
     gamma = 0.99
     tau = 0.01
     alpha = 0.2
-    a_lr = 1e-4
-    q_lr = 1e-4
-    p_lr = 1e-4
+    a_lr = 8e-5
+    q_lr = 8e-5
+    p_lr = 8e-5
     max_episodes = 100
-    max_steps = 500
+    max_steps = 750
     buffer_maxlen = 30000
-    training_batch_size = 128
-    schedule_period = 150
+    training_batch_size = 64
+    schedule_period = 250
     learn_scheduler = False
 
     agent = SACXAgent(env=env,
