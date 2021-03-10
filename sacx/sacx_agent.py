@@ -242,7 +242,7 @@ class SACXAgent():
                 if done or step == self.max_steps - 1:
                     #self.main_replay_buffer.append(trajectory)
                     #self.non_zero_main_rewards.append(main_reward_list)
-                    episode_rewards.append(episode_reward)
+                    #episode_rewards.append(episode_reward)
                     print("Episode " + str(episode) + ": " + str(episode_reward))
                     break
 
@@ -283,9 +283,7 @@ class SACXAgent():
                     test_rewards = self.test(1, 800)
                     #for k in range(10):
                         #self.update_task(64, len(self.tasks) - 1, False)
-                    if test_rewards[0] > 0:
-                        print('Something good happened')
-
+                    episode_rewards+=test_rewards
                 print("=== END TEST EPISODE ===")
             #if (episode+1) % self.storing_frequence == 0:
              #   self.store_models()
@@ -396,8 +394,8 @@ class SACXAgent():
 
                 if done or step == max_steps - 1:
                     if done:
-                         print("Task completed")
-                    episode_rewards.append(episode_reward)
+                        print("Task completed")
+                        episode_rewards.append(episode_reward)
                     print("Episode " + str(episode) + ": " + str(episode_reward))
                     break
 

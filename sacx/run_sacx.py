@@ -13,7 +13,7 @@ def main():
     a_lr = 1e-4
     q_lr = 1e-4
     p_lr = 1e-4
-    max_episodes = 1000
+    max_episodes = 70
     max_steps = 1200
     buffer_maxlen = 12000
     training_batch_size = 64
@@ -40,7 +40,7 @@ def main():
                       load_from=None)
 
     rewards = agent.train()
-    agent.test(num_episodes=10)
+    #agent.test(num_episodes=10)
     agent.store_rewards(rewards, max_steps, schedule_period, filename="./results/dense_3_auxiliary.txt")
 
 

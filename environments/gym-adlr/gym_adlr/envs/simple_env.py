@@ -19,7 +19,7 @@ N_CIRCLES = 3
 
 FIXED_POSITIONS = [(350, 150), (300, 400), (100, 200)]
 #INIT_POS = WINDOW_W, 0
-INIT_POS = (WINDOW_W / 2, WINDOW_H / 2)
+INIT_POS = (WINDOW_W, 0)
 SPARSE = False
 
 EPISODE_LENGTH = 100  # Maximum number of actions that can be taken
@@ -288,7 +288,7 @@ class SimpleEnvClean(gym.Env):
         self.circles = {}
         self.circles_shapely = {}
 
-    def reset(self, r=True):
+    def reset(self, r=True, render=True):
         self._destroy()
 
         # Information about our reward
@@ -327,7 +327,8 @@ class SimpleEnvClean(gym.Env):
             self.viewer = None
             """
 
-        self.render()
+        if render:
+            self.render()
 
         return self.step(None)[0]
 

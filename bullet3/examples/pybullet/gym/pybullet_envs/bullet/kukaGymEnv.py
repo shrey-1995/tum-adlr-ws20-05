@@ -223,9 +223,9 @@ class KukaGymEnv(gym.Env):
     closestPoints1 = p.getContactPoints(self.blockUid1, self._kuka.kukaEndEffectorIndex)
     closestPoints2 = p.getContactPoints(self.blockUid2, self._kuka.kukaEndEffectorIndex)'''
 
-    contact = False if curr_dist[0] > 0.15 else True
-    contact1 = False if curr_dist[1] > 0.15 else True
-    contact2 = False if curr_dist[2] > 0.15 else True
+    contact = False if curr_dist[0] > 0.2 else True
+    contact1 = False if curr_dist[1] > 0.2 else True
+    contact2 = False if curr_dist[2] > 0.2 else True
 
     if (contact):
       #print('Intersecction 0')

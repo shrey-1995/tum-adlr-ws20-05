@@ -69,7 +69,7 @@ class MountainCar(TaskEnvironment):
             raise Exception('Cannot perform action on terminal state!')
         if self.render:
             self.env.render()
-        state, reward, self.terminal, info = self.env.step(action)
+        state, reward, self.terminal, info = self.env.step(action, render=self.render)
         self.step_v += 1
 
         return state, reward, self.terminal, info
@@ -81,7 +81,7 @@ class MountainCar(TaskEnvironment):
         """
         self.terminal = False
         self.step_v = 0
-        return self.env.reset(r)
+        return self.env.reset(r, render=self.render)
 
     @staticmethod
     def auxiliary_tasks() -> list:
