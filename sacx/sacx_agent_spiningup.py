@@ -1,3 +1,7 @@
+"""
+Implementation of SAC-X on top of Spinning UP SAC baseline algorithm
+"""
+
 from copy import deepcopy
 import itertools
 import numpy as np

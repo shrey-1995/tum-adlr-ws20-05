@@ -120,10 +120,12 @@ class KukaGymEnv(gym.Env):
     p.setGravity(0, 0, 0)
     self._kuka = kuka.Kuka(urdfRootPath=self._urdfRoot, timeStep=self._timeStep)
     state = p.getLinkState(self._kuka.kukaUid, self._kuka.kukaEndEffectorIndex)
+
     if rd:
       self.endEffectorPos = list((np.random.random(),np.random.random(),np.random.random()))
     else:
-      self.endEffectorPos = list((0.5,0.5,0.5))
+      self.endEffectorPos = list((0.2,0.2,0.2))
+
     pos = list(self.endEffectorPos)
     jointPoses = p.calculateInverseKinematics(self._kuka.kukaUid, self._kuka.kukaEndEffectorIndex, pos)
     for i in range(12):

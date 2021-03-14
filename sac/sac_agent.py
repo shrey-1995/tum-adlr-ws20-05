@@ -1,6 +1,5 @@
 """
-Source: https://github.com/cyoon1729/Policy-Gradient-Methods/blob/master/sac/sac2019.py
-Work based on: Soft Actor-Critic Algorithms and Applications" (Haarnoja et al., 2019)
+Soft-Actor-Critic implementation
 """
 
 import torch
@@ -55,6 +54,11 @@ class SACAgent:
         self.replay_buffer = BasicBuffer(buffer_maxlen)
 
     def get_action(self, state):
+        """
+        Sample action from the policy using mean and standard deviation
+        :param state: observation space
+        :return: rescaled action
+        """
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         mean, log_std = self.policy_net.forward(state)
         std = log_std.exp()
@@ -71,6 +75,11 @@ class SACAgent:
                (self.action_range[1] + self.action_range[0]) / 2.0
 
     def update(self, batch_size):
+        """
+        Update policy and q-networks using SAC
+        :param batch_size: training batch size
+        """
+
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size)
         states = torch.FloatTensor(states).to(self.device)
         actions = torch.FloatTensor(actions).to(self.device)
@@ -100,7 +109,7 @@ class SACAgent:
         q2_loss.backward()
         self.q2_optimizer.step()
 
-        # delayed update for policy network and target q networks
+        # Update policy and target Q-networks
         new_actions, log_pi = self.policy_net.sample(states)
         if self.update_step % self.delay_step == 0:
             min_q = torch.min(
@@ -120,7 +129,7 @@ class SACAgent:
             for target_param, param in zip(self.target_q_net2.parameters(), self.q_net2.parameters()):
                 target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
 
-        # update temperature
+        # Update entropy term
         alpha_loss = (self.log_alpha * (-log_pi - self.target_entropy).detach()).mean()
 
         self.alpha_optim.zero_grad()

@@ -3,19 +3,10 @@ import gym
 from environments.core import State, Action
 from environments.extcore import TaskEnvironment, Task
 
-"""
-    Environment wrapper for OpenAI Gym's MountainCar
-"""
 
-gym.envs.register(
-    id='MountainCarLongCont-v0',
-    entry_point='gym.envs.classic_control:Continuous_MountainCarEnv'
-)
-
-
-class MountainCarState(State):
+class ToyEnvState(State):
     """
-        MountainCarState
+        ToyEnvState
     """
 
     def __init__(self, state, terminal: bool):
@@ -38,9 +29,9 @@ MAIN_TASK = Task("Main Task")
 TASKS = [RED, GREEN, BLUE, MAIN_TASK]
 
 
-class MountainCar(TaskEnvironment):
+class ToyEnvironment(TaskEnvironment):
     """
-        MountainCar environment class
+        Toy environment class for SAC-X algorithm. Implements tasks
     """
 
     def __init__(self, render=False):
@@ -50,7 +41,7 @@ class MountainCar(TaskEnvironment):
         """
         super().__init__()
         #PEND:change env
-        self.env = gym.make('gym_adlr.envs:simple-env-clean-v0')
+        self.env = gym.make('gym_adlr.envs:simple-env-clean-v0') # Make our environment
         self.render = render
         self.terminal = False
         self.step_v = 0
@@ -93,12 +84,12 @@ class MountainCar(TaskEnvironment):
         return TASKS
 
     def get_state_size(self):
-        return self.env.reset().shape
+        return self.env.reset(render=False).shape
 
 
 if __name__ == '__main__':
 
-    _e = MountainCar(render=True)
+    _e = ToyEnvironment(render=True)
     _s = _e.reset()
 
     for _ in range(1000):

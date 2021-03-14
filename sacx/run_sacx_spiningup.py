@@ -1,9 +1,9 @@
 from sacx.sacx_agent_spiningup import SACXAgent
-from environments.mountaincar_cont import MountainCar as MountainCarCont
+from environments.toy_environment import ToyEnvironment
 
 
 def main():
-    env = MountainCarCont(render=False)
+    env = ToyEnvironment(render=True) # 2D toy environment. Define if you want to render env.
     tasks = env.get_tasks()
 
     # SAC Params

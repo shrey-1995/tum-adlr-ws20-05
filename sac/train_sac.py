@@ -1,7 +1,18 @@
 from sac.sac_agent import SACAgent
 import gym
 
+
 def trainer(env, max_episodes, max_steps, batch_size, render=True):
+    """
+    Train SAC agent in a given environment
+
+    :param env: environment object
+    :param max_episodes: number of episodes to consider
+    :param max_steps: maximum number of steps in one episode
+    :param batch_size: training batch size
+    :param render: boolean indicating whether you want to render the environment
+    :return: reward for each episode
+    """
     # SAC Params
     gamma = 0.99
     tau = 0.01
@@ -11,10 +22,10 @@ def trainer(env, max_episodes, max_steps, batch_size, render=True):
     p_lr = 3e-4
     buffer_maxlen = 1000000
 
-    # 2019 agent
+    # Create agent
     agent = SACAgent(env, gamma, tau, alpha, q_lr, p_lr, a_lr, buffer_maxlen)
 
-    # train
+    # Train agent
     episode_rewards = []
 
     for episode in range(max_episodes):
@@ -25,7 +36,7 @@ def trainer(env, max_episodes, max_steps, batch_size, render=True):
             action = agent.get_action(state)
             next_state, reward, done, _ = env.step(action, render)
             agent.replay_buffer.push(state, action, reward[3], next_state, done)
-            episode_reward += reward[3]
+            episode_reward += reward[3] # Append reward for the main task (environment designed for SAC-X)
 
             if len(agent.replay_buffer) > batch_size:
                 agent.update(batch_size)
@@ -39,6 +50,7 @@ def trainer(env, max_episodes, max_steps, batch_size, render=True):
 
     return episode_rewards
 
+
 if __name__ == "__main__":
     env = gym.make('gym_adlr.envs:simple-env-clean-v0')
 
@@ -46,13 +58,11 @@ if __name__ == "__main__":
     max_episodes = 50
     max_steps = 2000
     batch_size = 64
-    render=True
+    render = True
 
     episode_rewards = trainer(env, max_episodes, max_steps, batch_size, render)
 
+    # Store rewards
     with open('../output/episode_rewards_sac_env.txt', 'w') as f:
         for item in episode_rewards:
             f.write("%s\n" % item)
-
-
-

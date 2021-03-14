@@ -1,12 +1,16 @@
+"""
+Run SAC-X in our 2-D toy environment
+"""
+
 from sacx.sacx_agent import SACXAgent
-from environments.mountaincar_cont import MountainCar as MountainCarCont
+from environments.toy_environment import ToyEnvironment
 
 
 def main():
-    env = MountainCarCont(render=False)
+    env = ToyEnvironment(render=True) # 2D toy environment. Define if you want to render env.
     tasks = env.get_tasks()
 
-    # SAC Params
+    # SAC-X Params
     gamma = 0.99
     tau = 0.01
     alpha = 0.2
@@ -17,8 +21,8 @@ def main():
     max_steps = 1200
     buffer_maxlen = 12000
     training_batch_size = 64
-    schedule_period = 1200
-    learn_scheduler = False
+    schedule_period = 1200 # Sample new task after N episodes
+    learn_scheduler = False # True -> SAC-X
 
     agent = SACXAgent(env=env,
                       gamma=gamma,
@@ -33,15 +37,14 @@ def main():
                       max_steps=max_steps,
                       training_batch_size=training_batch_size,
                       schedule_period=schedule_period,
-                      storing_frequence=10,
-                      share_layers=False,
+                      storing_frequence=10, # Store networks after N episodes
+                      share_layers=False, # If true, all networks will share the first layer
                       learn_scheduler=learn_scheduler,
-                      store_path=None,
-                      load_from=None)
+                      store_path=None, # Path to store networks
+                      load_from=None) # If not none, allows to load networks from files
 
     rewards = agent.train()
-    #agent.test(num_episodes=10)
-    agent.store_rewards(rewards, max_steps, schedule_period, filename="./results/dense_3_auxiliary.txt")
+    agent.store_rewards(rewards, max_steps, schedule_period, filename="./results/sixth_execution.txt")
 
 
 if __name__ == "__main__":

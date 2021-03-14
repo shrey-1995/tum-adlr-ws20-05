@@ -10,7 +10,6 @@ from sacx.scheduler import Scheduler
 from collections import deque
 from common.models import SoftQNetwork, PolicyNetwork
 from common.buffer import BasicBuffer
-from copy import copy
 
 class SACXAgent():
     def __init__(self,
@@ -56,17 +55,20 @@ class SACXAgent():
         self.max_steps = max_steps
         self.training_batch_size = training_batch_size
 
+        # Init networks
         self.p_nets = self.init_p_models(load_from, share_layer=share_layers)
         self.q_nets1, self.q_nets2, self.target_q_nets1, self.target_q_nets2 = self.init_q_models(load_from, share_layer=share_layers)
         self.q1_optimizers, self.q2_optimizers, self.policy_optimizers = self.init_optimizers(q_lr, p_lr, load_from)
         self.entropy_temperatures = self.init_temperatures(a_lr, alpha, load_from)
 
+        # Init replay buffers
         self.replay_buffer = BasicBuffer(buffer_maxlen)
-        self.main_replay_buffer = deque(maxlen=5)
-        self.non_zero_main_rewards = deque(maxlen=5)
+        #self.main_replay_buffer = deque(maxlen=5) # Used for Retrace
+        #self.non_zero_main_rewards = deque(maxlen=5) # Used for Retrace
         self.main_replay_buffer_q = BasicBuffer(3000)
         self.non_zero_main_rewards_q = deque(maxlen=1000)
         self.non_zero_rewards_q = deque(maxlen=1000)
+
         # SAC-X
         self.scheduler = Scheduler(temperature=1, tasks=tasks, schedule_period=schedule_period)
 
@@ -159,10 +161,22 @@ class SACXAgent():
         return temperatures
 
     def rescale_action(self, action):
+        """
+        Rescale actions to desired range
+        :param action: Original action
+        :return: Rescaled action
+        """
         return action * (self.action_range[1] - self.action_range[0]) / 2.0 + \
                (self.action_range[1] + self.action_range[0]) / 2.0
 
     def get_action(self, state, task, deterministic=False):
+        """
+        Sample action using a given task.
+        :param state: observation space
+        :param task: task used to sample actions
+        :param deterministic: If True, standard deviation will not be considered for sampling
+        :return: z, rescaled action, probability of action
+        """
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         mean, log_std = self.p_nets[task].forward(state)
         std = log_std.exp()
@@ -185,6 +199,13 @@ class SACXAgent():
         return z, self.rescale_action(action), prob
 
     def get_probability(self, state, task, z):
+        """
+        Get the probability of a given z for a task
+        :param state: observation state
+        :param task: task to compute probability
+        :param z: value sampled from distribution
+        :return: probability
+        """
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         mean, log_std = self.p_nets[task](state)
         std = log_std.exp()
@@ -197,22 +218,31 @@ class SACXAgent():
         return prob
 
     def train(self):
+        """
+        Train agent
+        """
         episode_rewards = []
-        task=None
+
         for episode in range(self.max_episodes):
-            if episode == 100:
-                print('Stop for testing here')
             state = self.env.reset()
             episode_reward = 0
+
+            # Information used by the scheduler
             scheduled_tasks = []
             main_reward_list = []
             scheduled_tasks_steps = []
             scheduled_task_step = 0
+
+            # Store trajectories
             trajectory = []
-            self.main_replay_buffer.append(trajectory)
-            self.non_zero_main_rewards.append(main_reward_list)
+            #self.main_replay_buffer.append(trajectory)
+            #self.non_zero_main_rewards.append(main_reward_list)
+
             task = None
+
             for step in range(self.max_steps):
+
+                # Schedule new task after schedule_period steps
                 if (step-scheduled_task_step) % self.schedule_period == 0:
                     prev_task = task
                     t = 0
@@ -222,31 +252,34 @@ class SACXAgent():
                         if t > 10:  # Avoid the scheduler selecting same task forever
                             task = self.schedule_task(scheduled_tasks[-2:], self.learn_scheduler, episode>9)
                             break
+
                     scheduled_tasks_steps.append(step)
                     scheduled_tasks.append(self.tasks[task])
                     scheduled_task_step = step
                     print("Switching to ", self.tasks[task])
 
                 z, action, prob = self.get_action(state, task) # Sample new action using the task policy network
-                next_state, reward, done, visited_circles = self.env.step(action)
-                if reward[3]>5:
+                next_state, reward, done, visited_circles = self.env.step(action) # Interact with environment
+
+                if reward[3]>0: # If main task received non-zero reward, store information in buffer for selective sampling
                     main_reward_list.append(step)
                     self.non_zero_rewards_q.append((state, action, np.array([reward]), next_state, done))
-                #prob = self.get_probability(state, task, z)
+
+                # Store trajectory
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 trajectory.append((state, action, reward, next_state, done, z, prob))
-                episode_reward += reward[task]
+
+                episode_reward += reward[task] # Update episode reward
+
+                # Update auxiliary tasks if we have enough training data
                 if len(self.replay_buffer) > self.training_batch_size:
                     self.update(self.training_batch_size, auxiliary=True, main=False, epochs=1)
 
                 if done or step == self.max_steps - 1:
-                    #self.main_replay_buffer.append(trajectory)
-                    #self.non_zero_main_rewards.append(main_reward_list)
-                    #episode_rewards.append(episode_reward)
-                    print("Episode " + str(episode) + ": " + str(episode_reward))
+                    print("Finished episode " + str(episode) + ": " + str(episode_reward))
                     break
 
-                # Schedule new task
+                # Schedule new task if previous one was finished
                 if task < 3:
                     if visited_circles[task] == 3:
                         prev_task = task
@@ -264,33 +297,38 @@ class SACXAgent():
 
                 state = next_state
 
+                # Retrace implementation
                 '''if (step+1)%10==0:
                     trajectories = self.sample_trajectories(10, 8, False)
                     self.update_q_main(trajectories)
                     self.update_p_main(trajectories)'''
 
+            # Train scheduler after 7 episodes to ensure random exploration at first
             if self.learn_scheduler is True and episode+1>7:
                 self.scheduler.train_scheduler(trajectories=trajectory, scheduled_tasks=scheduled_tasks, scheduled_tasks_steps=scheduled_tasks_steps)
 
-            '''trajectories = self.sample_trajectories(50, 8, True)
-            self.update_q_main(trajectories)
-            self.update_p_main(trajectories)'''
-
+            # Update SAC implementation of Main Task
             self.update(self.training_batch_size, auxiliary=False, main=True, epochs=200)
-            if (episode+1)>5 and (episode+1) % 3 == 0:
+
+            # Testing episode and train using main task
+            if (episode+1) % 3 == 0:
                 print("=== TESTING EPISODE ===")
                 for j in range(1):
                     test_rewards = self.test(1, 800)
-                    #for k in range(10):
-                        #self.update_task(64, len(self.tasks) - 1, False)
-                    episode_rewards+=test_rewards
+                    episode_rewards.append(test_rewards)
                 print("=== END TEST EPISODE ===")
-            #if (episode+1) % self.storing_frequence == 0:
-             #   self.store_models()
+
 
         return episode_rewards
 
     def update(self, batch_size, auxiliary=True, main=False, epochs=1):
+        """
+        Used to update networks in a simple way
+        :param batch_size: training batch size
+        :param auxiliary: boolean to decide if auxiliary tasks must be trained
+        :param main: boolean to decide if main task must be trained
+        :param epochs: number of epochs for training
+        """
         for e in range(epochs):
             if auxiliary is True:
                 for i in range(len(self.tasks)-1):
@@ -299,11 +337,19 @@ class SACXAgent():
                 self.update_task(batch_size, len(self.tasks)-1)
 
     def update_task(self, batch_size, index, f_t = True):
+        """
+        Uses SAC to update the networks for a given task
+        :param batch_size: training batch size
+        :param index: task index to be updated
+        :param f_t: if true, we use auxiliary tasks experience for training, else we use main task experience generated in test function
+        """
         i = index
+
         if f_t:
             states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size, index == 3, self.non_zero_rewards_q)
         else:
             states, actions, rewards, next_states, dones = self.main_replay_buffer_q.sample(batch_size, index == 3, self.non_zero_main_rewards_q)
+
         states = torch.FloatTensor(states).to(self.device)
         actions = torch.FloatTensor(actions).to(self.device)
         rewards = torch.FloatTensor(rewards).to(self.device)
@@ -335,7 +381,7 @@ class SACXAgent():
         q2_loss.backward()
         self.q2_optimizers[i].step()
 
-        # delayed update for policy network and target q networks
+        # Update policy and target Q-networks
         new_actions, log_pi = self.p_nets[i].sample(states)
         if self.update_step % self.delay_step == 0:
             min_q = torch.min(
@@ -355,7 +401,7 @@ class SACXAgent():
             for target_param, param in zip(self.target_q_nets2[i].parameters(), self.q_nets2[i].parameters()):
                 target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
 
-        # update temperature. Recall info is stored as (alpha, target_entropy, log_alpha, alpha_optim)
+        # Update entropy. Recall info is stored as (alpha, target_entropy, log_alpha, alpha_optim)
         log_alpha = self.entropy_temperatures[i][2]
         target_entropy = self.entropy_temperatures[i][1]
         alpha_loss = (log_alpha * (-log_pi - target_entropy).detach()).mean()
@@ -370,32 +416,36 @@ class SACXAgent():
 
         self.update_step += 1
 
-    def test(self, num_episodes=3, max_steps=500):
+    def test(self, num_episodes=3, max_steps=500, train=True):
+        """
+        Test agent behavior. Also allows to train main task using this experience
+        :param num_episodes: number of testing episodes
+        :param max_steps: maximum steps in one episode
+        :param train: boolean to determine if we want to also train the main task
+        """
         episode_rewards = []
 
         for episode in range(num_episodes):
             print("Testing episode {}\n".format(episode))
             state = self.env.reset(False)
             episode_reward = 0
+
             for step in range(max_steps):
-                #a_state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-                #mean, _ = self.p_nets[3].forward(a_state)
                 _, action, _ = self.get_action(state, 3)  # Sample new action using the main task policy network
-                #action = mean.cpu().detach().squeeze(0).numpy()
                 next_state, reward, done, visited_circles = self.env.step(action)
-                if reward[3]>5:
+
+                if reward[3]>0: # If we found positive reward
                     self.non_zero_main_rewards_q.append((state, action, np.array([reward]), next_state, done))
-                #prob = self.get_probability(state, task, z)
+
                 self.main_replay_buffer_q.push(state, action, reward, next_state, done)
                 episode_reward += reward[3]
 
-                if len(self.main_replay_buffer_q)>64:
+                # Train main task using its own experience
+                if len(self.main_replay_buffer_q)>64 and train:
                     self.update_task(64, len(self.tasks) - 1, False)
 
                 if done or step == max_steps - 1:
-                    if done:
-                        print("Task completed")
-                        episode_rewards.append(episode_reward)
+                    episode_rewards.append(episode_reward)
                     print("Episode " + str(episode) + ": " + str(episode_reward))
                     break
 
@@ -433,18 +483,26 @@ class SACXAgent():
             torch.save(q_opt, self.store_path.format('q2_optimizer', i))
 
     def schedule_task(self, scheduled_tasks, learn_scheduler, oracle=True):
-        if learn_scheduler is True:
+        """
+        Scheduler
+        :param scheduled_tasks: previously scheduled tasks
+        :param learn_scheduler: if true -> SAC-X, else SAC-U or oracle
+        :param oracle: use oracle scheduler instead of SAC-U
+        :return: new task
+        """
+        if learn_scheduler is True: # SAC-X
             return self.scheduler.sample(scheduled_tasks)
-        else:
+        elif oracle: # Use oracle with room for random exploration
             choice = np.random.random()
-            if choice < 0.7:
+            if choice < 0.7: # Oracle 70% of the time
                 if len(scheduled_tasks) == 0:
                     return 0
                 else:
                     return (self.tasks.index(scheduled_tasks[-1]) + 1) % 3
-            else:
+            else: # Random 30% of the time
                 return random.choice([i for i in range(len(self.tasks) - 1)])
-
+        else: #SAC-U
+            return random.choice([i for i in range(len(self.tasks) - 1)])
 
     def store_rewards(self, episode_rewards, max_steps, scheduler_period, filename):
         with open(filename, 'w') as f:
@@ -455,7 +513,7 @@ class SACXAgent():
 
     def sample_trajectories(self, num_trajectories = 10, training_sequence_len=8, selective_sampling=True):
         """
-        Samples trajectories from the replay memory
+        Samples trajectories from the replay memory. Used for retrace implementation
         :return: A minibatch (list) of random-length trajectories
         """
         minibatch = []
@@ -477,6 +535,9 @@ class SACXAgent():
         return minibatch
 
     def update_q_main(self, trajectories, gamma=0.99):
+        """
+        Retrace update of Q network for main task. Not converging.
+        """
 
         # Calculation of retrace Q
         q_ret = torch.zeros(len(trajectories))
@@ -531,6 +592,9 @@ class SACXAgent():
             target_param.data.copy_(self.tau * param + (1 - self.tau) * target_param)
 
     def update_p_main(self, trajectories, gamma=0.95):
+        """
+        Retrace update of policy network for main task. Not converging.
+        """
         # Extract information out of trajectory
         states = torch.FloatTensor([trajectory[0][0] for trajectory in trajectories])
         # actions (for each task) for every state action pair in trajectory

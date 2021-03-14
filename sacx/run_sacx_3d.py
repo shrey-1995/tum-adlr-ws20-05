@@ -1,10 +1,10 @@
 from sacx.sacx_agent_3d import SACXAgent
-from environments.mountaincar_cont import MountainCar as MountainCarCont
+from environments.toy_environment import ToyEnvironment
 from kukaGymEnv import KukaGymEnv
 
 def main():
-    env = KukaGymEnv(renders=True, isDiscrete=False, maxSteps=10000000)
-    tasks = MountainCarCont.get_tasks()
+    env = KukaGymEnv(renders=False, isDiscrete=False, maxSteps=10000000)
+    tasks = ToyEnvironment.get_tasks()
 
     # SAC Params
     gamma = 0.99
@@ -17,8 +17,8 @@ def main():
     max_steps = 750
     buffer_maxlen = 30000
     training_batch_size = 64
-    schedule_period = 250
-    learn_scheduler = False
+    schedule_period = 250 # Sample new task after N episodes
+    learn_scheduler = False # True -> SAC-X
 
     agent = SACXAgent(env=env,
                       gamma=gamma,
@@ -34,13 +34,12 @@ def main():
                       training_batch_size=training_batch_size,
                       schedule_period=schedule_period,
                       storing_frequence=10,
-                      share_layers=False,
+                      share_layers=False, # If true, all networks will share the first layer
                       learn_scheduler=learn_scheduler,
-                      store_path=None,
-                      load_from=None)
+                      store_path=None, # Path to store networks
+                      load_from=None) # If not none, allows to load networks from files
 
     rewards = agent.train()
-    agent.test(num_episodes=10)
     agent.store_rewards(rewards, max_steps, schedule_period, filename="./results/dense_3_auxiliary.txt")
 
 
